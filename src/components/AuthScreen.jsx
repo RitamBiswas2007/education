@@ -223,7 +223,7 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
                 : 'text-slate-400 hover:text-white'
             }`}
           >
-            Create Gmail Account
+            Sign Up
           </button>
         </div>
 
@@ -361,18 +361,18 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
             disabled={loading}
             className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-xs hover:brightness-110 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
           >
-            {loading ? 'Processing...' : isSignUp ? 'Create Isolated Supabase Account' : 'Sign In to Portal'}
+            {loading ? 'Processing...' : isSignUp ? 'Create Account' : 'Sign In to Portal'}
           </button>
         </form>
 
-        {/* Demo Pitch Guest Login */}
+        {/* Guest Login Option */}
         <div className="pt-2 border-t border-slate-800 text-center">
           <button
             type="button"
             onClick={onGuestLogin}
             className="text-xs text-slate-400 hover:text-emerald-400 font-semibold transition-all underline"
           >
-            ⚡ Continue as Hackathon Judge Guest
+            ⚡ Continue as Guest
           </button>
         </div>
       </div>
