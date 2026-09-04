@@ -197,7 +197,7 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
             AYUSH<span className="gradient-text-ayush">SKILLBRIDGE</span>
           </h2>
           <p className="text-xs text-slate-400">
-            SIH26044 • Ministry of Ayush Academia-Industry Portal
+            Official Gateway • Ministry of Ayush Skill Ecosystem
           </p>
         </div>
 

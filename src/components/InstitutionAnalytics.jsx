@@ -30,7 +30,7 @@ export default function InstitutionAnalytics() {
               <div className="flex items-center gap-2">
                 <h2 className="text-2xl font-bold text-white">Ministry of Ayush & Institutional Analytics</h2>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold badge-tech flex items-center gap-1">
-                  SIH26044 National Dashboard
+                  National Analytics & Audit Engine
                 </span>
               </div>
               <p className="text-slate-400 text-sm mt-0.5">

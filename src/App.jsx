@@ -152,12 +152,12 @@ export default function App() {
   // Guest Login Handler
   const handleGuestLogin = () => {
     const guestUser = {
-      id: 'GUEST-SIH-2026',
-      email: 'judge@sih2026.gov.in',
-      name: 'SIH Judge / Guest',
+      id: 'GUEST-USER-2026',
+      email: 'evaluator@ayush.gov.in',
+      name: 'Executive Guest User',
       role: 'student',
       institution: 'Ministry of Ayush Evaluation Desk',
-      degree: 'Guest Evaluator',
+      degree: 'Senior Evaluator',
       skillScore: 88,
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
     };
@@ -267,16 +267,16 @@ export default function App() {
                   AYUSH<span className="gradient-text-ayush">SKILLBRIDGE</span>
                 </h1>
                 <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                  SIH26044
+                  OFFICIAL PORTAL
                 </span>
                 {isSupabaseConfigured && (
                   <span className="hidden sm:flex px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 items-center gap-1">
-                    <Database className="w-3 h-3 text-cyan-400 animate-pulse" /> Supabase Live
+                    <Database className="w-3 h-3 text-cyan-400 animate-pulse" /> Cloud Connected
                   </span>
                 )}
               </div>
               <p className="text-[10px] text-slate-400 font-medium">
-                Ministry of Ayush • Academia-Industry Skill Mapping
+                Ministry of Ayush • National Academia-Industry Ecosystem
               </p>
             </div>
           </div>
@@ -348,7 +348,7 @@ export default function App() {
 
             <button
               onClick={handleLogOut}
-              title="Log Out of Supabase Session"
+              title="Log Out of Session"
               className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-all font-bold text-xs flex items-center gap-1.5"
             >
               <LogOut className="w-4 h-4" />
@@ -363,15 +363,15 @@ export default function App() {
       <div className="bg-slate-900/60 border-b border-slate-800/60 py-2 px-4 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-300">Active Persona Workflow:</span>
-            {activeRole === 'student' && <span className="text-emerald-400 font-bold">🎓 Student Diagnostics, Skill Radar & 1-Click Internship Applications</span>}
-            {activeRole === 'industry' && <span className="text-cyan-400 font-bold">🏢 Recruiter Portal, AI Candidate Match Ranking & Job Posting</span>}
-            {activeRole === 'academician' && <span className="text-amber-400 font-bold">👨‍🏫 Faculty Sabbaticals, Research Grant Proposals & Mentorship</span>}
-            {activeRole === 'admin' && <span className="text-indigo-400 font-bold">📊 Institutional Placement Readiness, Skill Heatmaps & NAAC Audit</span>}
+            <span className="font-semibold text-slate-300">Active Module:</span>
+            {activeRole === 'student' && <span className="text-emerald-400 font-bold">🎓 Skill Assessment Diagnostics, Competency Mapping & Industry Opportunities</span>}
+            {activeRole === 'industry' && <span className="text-cyan-400 font-bold">🏢 Corporate Recruiter Portal, Candidate AI Match Ranking & Talent Acquisition</span>}
+            {activeRole === 'academician' && <span className="text-amber-400 font-bold">👨‍🏫 Faculty Sabbaticals, Research Grant Consultancy & Mentorship Hub</span>}
+            {activeRole === 'admin' && <span className="text-indigo-400 font-bold">📊 Institutional Placement Readiness, Sector Deficiency Analytics & NAAC Audits</span>}
           </div>
           
           <div className="hidden md:flex items-center gap-2 text-slate-500">
-            <span>SIH 2026 Problem Statement SIH26044</span>
+            <span>Ministry of Ayush National Infrastructure</span>
           </div>
         </div>
       </div>
@@ -411,12 +411,12 @@ export default function App() {
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Smart India Hackathon 2026 (SIH26044) • Ministry of Ayush Solution</span>
+            <span>Ministry of Ayush, Government of India • National Skill Ecosystem Infrastructure</span>
           </div>
           <div className="flex items-center gap-3">
-            <span>Authenticated User: <strong className="text-slate-300">{currentUser.email}</strong></span>
+            <span>Authenticated Account: <strong className="text-slate-300">{currentUser.email}</strong></span>
             {isSupabaseConfigured && (
-              <span className="text-cyan-400 font-bold">⚡ Supabase Auth & RLS Isolated</span>
+              <span className="text-cyan-400 font-bold">⚡ Enterprise Cloud Active</span>
             )}
           </div>
         </div>

@@ -1,4 +1,4 @@
-// Mock Data for SIH26044: Academia-Industry Collaboration & Skill Mapping Portal (Ministry of Ayush & STEM)
+// Production Dataset for Ministry of Ayush Academia-Industry Skill Mapping Infrastructure
 
 export const INITIAL_STUDENT_PROFILE = {
   id: "STD-2026-089",

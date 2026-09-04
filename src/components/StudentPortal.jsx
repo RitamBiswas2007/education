@@ -196,7 +196,7 @@ export default function StudentPortal({
                     <Target className="w-5 h-5 text-emerald-400" /> Real-Time Competency vs. Industry Standard
                   </h3>
                   <p className="text-slate-400 text-xs mt-1">
-                    Mapped against Ayush Industry Skill Matrix (SIH26044 Benchmarks)
+                    Mapped against Ayush Industry Skill Matrix (National Occupational Skill Standards)
                   </p>
                 </div>
                 <button 
