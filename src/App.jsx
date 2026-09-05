@@ -152,14 +152,10 @@ export default function App() {
         // Check onboarding step
         if (!isRoleChosen) {
           setShowRoleSelection(true);
-          setShowProfileSetup(false);
-        } else if (!localProfileDone) {
-          setShowRoleSelection(false);
-          setShowProfileSetup(true);
         } else {
           setShowRoleSelection(false);
-          setShowProfileSetup(false);
         }
+        setShowProfileSetup(false);
       }
     });
 
@@ -215,14 +211,10 @@ export default function App() {
 
         if (!isRoleChosen) {
           setShowRoleSelection(true);
-          setShowProfileSetup(false);
-        } else if (!localProfileDone) {
-          setShowRoleSelection(false);
-          setShowProfileSetup(true);
         } else {
           setShowRoleSelection(false);
-          setShowProfileSetup(false);
         }
+        setShowProfileSetup(false);
       } else {
         setCurrentUser(null);
         setShowRoleSelection(false);
@@ -292,14 +284,10 @@ export default function App() {
 
     if (!localRoleConfirmed || isNewUser || userProfile.needsRoleSelection) {
       setShowRoleSelection(true);
-      setShowProfileSetup(false);
-    } else if (!localProfileDone) {
-      setShowRoleSelection(false);
-      setShowProfileSetup(true);
     } else {
       setShowRoleSelection(false);
-      setShowProfileSetup(false);
     }
+    setShowProfileSetup(false);
 
     if (chosenRole === 'student') {
       const fresh = createFreshStudentProfile(userProfile);
@@ -318,7 +306,6 @@ export default function App() {
     const hasSelectedGuestRole = localStorage.getItem('ayush_guest_role_selected') === 'true';
     const savedGuestRole = localStorage.getItem('ayush_guest_role');
     const savedGuestInst = localStorage.getItem('ayush_guest_institution');
-    const hasGuestProfile = localStorage.getItem('ayush_profile_completed_GUEST-USER-2026') === 'true';
 
     let savedGuestProfile = {};
     try {
@@ -358,14 +345,10 @@ export default function App() {
 
     if (!hasSelectedGuestRole || !savedGuestRole) {
       setShowRoleSelection(true);
-      setShowProfileSetup(false);
-    } else if (!hasGuestProfile) {
-      setShowRoleSelection(false);
-      setShowProfileSetup(true);
     } else {
       setShowRoleSelection(false);
-      setShowProfileSetup(false);
     }
+    setShowProfileSetup(false);
   };
 
   // Role Confirmation Handler (Saves permanently and triggers Profile Setup Form if needed)
@@ -429,10 +412,7 @@ export default function App() {
     }
 
     // After role selection, prompt user to complete profile form if not already completed!
-    const isProfileDone = localStorage.getItem(`ayush_profile_completed_${userId}`) === 'true';
-    if (!isProfileDone) {
-      setShowProfileSetup(true);
-    }
+    setShowProfileSetup(false);
   };
 
   // Profile Setup Form Submission Handler (Mandatory Onboarding for All Users)

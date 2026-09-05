@@ -25,7 +25,14 @@ import {
   AlertCircle,
   HelpCircle
 } from 'lucide-react';
-import { getTenQuestionsForDomains, AYUSH_DOMAINS } from '../data/ayushQuestionBank';
+import { 
+  getTenQuestionsForDomains, 
+  generateStudentSkillsFromDomains, 
+  generateRecommendedCoursesFromDomains,
+  AYUSH_DOMAINS 
+} from '../data/ayushQuestionBank';
+import AISkillDiscoveryBox from './AISkillDiscoveryBox';
+import { MASTER_DOMAINS } from '../data/skillCareerEngine';
 
 export default function StudentPortal({ 
   studentProfile, 
@@ -67,6 +74,37 @@ export default function StudentPortal({
   // Job Search Filters
   const [jobSearch, setJobSearch] = useState('');
   const [domainFilter, setDomainFilter] = useState('All');
+
+  // Handle skill/domain updates from AI Skill Discovery Box
+  const handleUpdateProfileSkills = (newDomains, newSkillName) => {
+    setStudentProfile(prev => {
+      const existingSkills = Array.isArray(prev.skills) ? [...prev.skills] : [];
+      let updatedSkills = [...existingSkills];
+
+      if (newSkillName && !updatedSkills.some(s => s.name.toLowerCase() === newSkillName.toLowerCase())) {
+        updatedSkills.unshift({
+          name: newSkillName,
+          category: 'Focus Skill',
+          currentLevel: 55,
+          requiredLevel: 90
+        });
+      }
+
+      const domainSkills = generateStudentSkillsFromDomains(newDomains);
+      domainSkills.forEach(ds => {
+        if (!updatedSkills.some(s => s.name.toLowerCase() === ds.name.toLowerCase())) {
+          updatedSkills.push(ds);
+        }
+      });
+
+      return {
+        ...prev,
+        interestedDomains: newDomains,
+        skills: updatedSkills.slice(0, 8),
+        completedCourses: generateRecommendedCoursesFromDomains(newDomains)
+      };
+    });
+  };
 
   const currentQ = assessmentQuestions[quizIndex] || assessmentQuestions[0];
 
@@ -300,6 +338,12 @@ export default function StudentPortal({
           </button>
         </div>
       </div>
+
+      {/* AI Skill-to-Career & Domain Discovery Box */}
+      <AISkillDiscoveryBox
+        studentProfile={studentProfile}
+        onUpdateProfileSkills={handleUpdateProfileSkills}
+      />
 
       {/* TAB 1: SKILL GAP RADAR & DIAGNOSTICS */}
       {activeTab === 'radar' && (

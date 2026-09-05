@@ -633,6 +633,168 @@ export const DOMAIN_QUESTION_BANK = {
       explanation: 'The Biological Diversity Act mandates prior intimation/approval from SBB/NBA to ensure sustainable conservation and equitable sharing of benefits with local indigenous communities.',
       skillBoost: { skillName: 'Ayush Premium Mark & Export Regulations', points: 9 }
     }
+  ],
+
+  ai_healthtech: [
+    {
+      id: 'ai-1',
+      domainId: 'ai_healthtech',
+      category: 'Deep Learning & Computer Vision',
+      question: 'In training Deep Learning Convolutional Neural Networks (CNNs) for botanical leaf and raw herb image classification, what technique mitigates overfitting when working with small clinical datasets?',
+      options: [
+        'Data Augmentation (random rotation, flipping, cropping) & Transfer Learning from pre-trained vision models (e.g. ResNet/EfficientNet)',
+        'Increasing learning rate to infinity',
+        'Deleting 90% of training samples randomly',
+        'Disabling all regularization layers completely'
+      ],
+      correctAnswer: 0,
+      explanation: 'Transfer learning leverages feature extractors pre-trained on millions of images, while data augmentation artificially expands botanical training diversity to prevent overfitting on scarce herbarium datasets.',
+      skillBoost: { skillName: 'Clinical Computer Vision (Medical Imaging)', points: 10 }
+    },
+    {
+      id: 'ai-2',
+      domainId: 'ai_healthtech',
+      category: 'Generative AI & LLMs in Medicine',
+      question: 'When building a Large Language Model (LLM) Clinical Decision Support System for Ayush classical texts (Samhitas), what architecture ensures responses cite verified pharmacopoeial verses without hallucination?',
+      options: [
+        'Retrieval-Augmented Generation (RAG) coupled with vector embeddings of authenticated classical monographs',
+        'Standard unprompted base model without context',
+        'Simple hardcoded string replacement scripts',
+        'Allowing the model to invent verses randomly'
+      ],
+      correctAnswer: 0,
+      explanation: 'RAG retrieves ground-truth text chunks from validated Ayush databases (e.g. Charaka, Sushruta, API) via vector similarity search, feeding authentic context to the LLM to eliminate medical hallucinations.',
+      skillBoost: { skillName: 'Generative AI & LLMs in Healthcare', points: 10 }
+    },
+    {
+      id: 'ai-3',
+      domainId: 'ai_healthtech',
+      category: 'Machine Learning Evaluation',
+      question: 'Which statistical evaluation metric is critical when deploying an AI diagnostic screening model for early detection of metabolic disorders where false negatives are unacceptable?',
+      options: [
+        'Sensitivity (Recall)',
+        'Model file size in megabytes',
+        'CPU clock speed only',
+        'Random guessing accuracy'
+      ],
+      correctAnswer: 0,
+      explanation: 'Sensitivity (True Positive Rate / Recall = TP / (TP + FN)) measures the model\'s ability to identify all positive disease cases, ensuring critical clinical conditions are never missed.',
+      skillBoost: { skillName: 'Machine Learning (Scikit-Learn, PyTorch)', points: 9 }
+    },
+    {
+      id: 'ai-4',
+      domainId: 'ai_healthtech',
+      category: 'Natural Language Processing (NLP)',
+      question: 'In processing multilingual Ayush Electronic Health Records (EHR) containing mixed Sanskrit/Hindi Ayurvedic terms and English clinical notes, which NLP technique handles cross-lingual terminology mapping?',
+      options: [
+        'Multilingual transformer embeddings (mBERT/XLM-RoBERTa) mapped to standardized SNOMED-CT and NAMASTE concepts',
+        'Deleting all non-English text unconditionally',
+        'Single character ASCII conversion only',
+        'Manual dictionary lookup without stemming'
+      ],
+      correctAnswer: 0,
+      explanation: 'Cross-lingual transformer models capture contextual semantic representations across Sanskrit, Hindi, and English clinical notes, aligning indigenous diagnostic terminology with international terminologies.',
+      skillBoost: { skillName: 'Natural Language Processing (Clinical Notes)', points: 9 }
+    }
+  ],
+
+  data_science: [
+    {
+      id: 'ds-1',
+      domainId: 'data_science',
+      category: 'Biostatistics & Clinical Trials',
+      question: 'Which statistical test is most appropriate to evaluate whether an Ayush herbal formulation produces a statistically significant reduction in HbA1c levels compared to a placebo in a randomized controlled trial?',
+      options: [
+        'Paired Student\'s t-test (within group) and Two-way Repeated Measures ANOVA (between groups)',
+        'Simple visual inspection without statistical tests',
+        'Computing the average without variance',
+        'Chi-Square test for continuous numerical biomarkers'
+      ],
+      correctAnswer: 0,
+      explanation: 'Repeated Measures ANOVA and independent sample t-tests evaluate both the time effect (pre- vs post-intervention) and group interaction (herbal treatment vs placebo control) with 95% confidence intervals.',
+      skillBoost: { skillName: 'R for Biostatistics & Survival Analysis', points: 10 }
+    },
+    {
+      id: 'ds-2',
+      domainId: 'data_science',
+      category: 'Predictive Modeling & ROC Analysis',
+      question: 'What does a Receiver Operating Characteristic (ROC) curve with an Area Under the Curve (AUC) of 0.92 signify in a predictive clinical risk assessment model?',
+      options: [
+        'Excellent discriminative ability to distinguish between disease cases and healthy controls',
+        'Complete model failure and high random error',
+        'That the model can only process 92 records per second',
+        'A 92% rate of false alarms'
+      ],
+      correctAnswer: 0,
+      explanation: 'An AUC-ROC score above 0.90 indicates outstanding diagnostic discriminatory power, showing the model reliably ranks true positive patients higher than healthy controls across all classification thresholds.',
+      skillBoost: { skillName: 'Python Data Analytics (Pandas, NumPy)', points: 9 }
+    }
+  ],
+
+  bioinformatics: [
+    {
+      id: 'bio-1',
+      domainId: 'bioinformatics',
+      category: 'Molecular Docking & Drug Design',
+      question: 'In computational molecular docking (e.g., AutoDock Vina), what does a highly negative binding affinity score (e.g., -9.8 kcal/mol) between a botanical flavonoid and a therapeutic target receptor indicate?',
+      options: [
+        'Favorable spontaneous ligand-receptor binding and high thermodynamic stability of the complex',
+        'Repulsion and inability of the molecule to enter the active binding pocket',
+        'Immediate molecular denaturation of the ligand',
+        'Neutral interaction with zero affinity'
+      ],
+      correctAnswer: 0,
+      explanation: 'Gibbs free energy change (ΔG) indicates binding favorability; more negative docking scores signify stronger non-covalent interactions (hydrogen bonds, hydrophobic contacts) within the active site.',
+      skillBoost: { skillName: 'Molecular Docking (AutoDock, PyMOL)', points: 10 }
+    },
+    {
+      id: 'bio-2',
+      domainId: 'bioinformatics',
+      category: 'Ayurgenomics & Pharmacogenomics',
+      question: 'In landmark Ayurgenomics research conducted by CSIR and Indian institutes, which major human drug-metabolizing CYP450 enzyme polymorphism correlates significantly with classical Pitta Prakriti individuals?',
+      options: [
+        'CYP2C19 extensive metabolizer genotype',
+        'Complete deletion of all CYP genes',
+        'Absence of liver enzymatic pathways',
+        'Universal slow acetylation in all populations'
+      ],
+      correctAnswer: 0,
+      explanation: 'Pioneering peer-reviewed Ayurgenomics studies published in PNAS and Nature Scientific Reports showed high metabolic capacity and specific CYP2C19 gene expression patterns correlating with classical Pitta phenotypes.',
+      skillBoost: { skillName: 'Ayurgenomics & Phenotype Correlation', points: 10 }
+    }
+  ],
+
+  software_engineering: [
+    {
+      id: 'se-1',
+      domainId: 'software_engineering',
+      category: 'Real-Time HealthTech Architecture',
+      question: 'When architecting a high-concurrency Tele-Ayush consultation portal handling thousands of video sessions, which protocol enables peer-to-peer real-time audio/video streaming with minimal latency?',
+      options: [
+        'WebRTC (Web Real-Time Communication) with STUN/TURN servers',
+        'Standard HTTP polling every 30 seconds',
+        'FTP batch file upload',
+        'SMTP email attachments'
+      ],
+      correctAnswer: 0,
+      explanation: 'WebRTC provides sub-500ms browser-to-browser UDP streaming of encrypted audio/video streams, ideal for live patient-doctor Ayush consultations across varying bandwidth connections.',
+      skillBoost: { skillName: 'Cloud Deployment (Vercel, AWS)', points: 10 }
+    },
+    {
+      id: 'se-2',
+      domainId: 'software_engineering',
+      category: 'ABDM Integration',
+      question: 'Under the Ayushman Bharat Digital Mission (ABDM) Milestone 1 compliance for electronic health record software, which component generates the unique 14-digit citizen health identifier?',
+      options: [
+        'ABHA (Ayushman Bharat Health Account) API Integration',
+        'Local auto-incrementing SQL integer',
+        'Static random number generator without verification',
+        'Hardcoded mock ID'
+      ],
+      correctAnswer: 0,
+      explanation: 'ABHA APIs interface with the National Health Authority gateway to generate, verify (via OTP/Aadhaar), and link 14-digit ABHA IDs to longitudinal Ayush health records.',
+      skillBoost: { skillName: 'HL7 FHIR Health Informatics & ABHA IDs', points: 9 }
+    }
   ]
 };
 
