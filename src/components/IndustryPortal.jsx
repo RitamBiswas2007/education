@@ -19,13 +19,14 @@ export default function IndustryPortal({
   jobs,
   onAddJob,
   candidates,
-  onUpdateCandidateStatus
+  onUpdateCandidateStatus,
+  currentUser
 }) {
   const [activeSubTab, setActiveSubTab] = useState('candidates'); // 'candidates', 'post-job', 'my-listings'
 
   // Post Job Form State
   const [jobTitle, setJobTitle] = useState('');
-  const [companyName, setCompanyName] = useState('Dabur Research & Development Centre');
+  const [companyName, setCompanyName] = useState(currentUser?.institution || 'Dabur Research & Development Centre');
   const [domain, setDomain] = useState('Ayush Bio-Tech');
   const [stipend, setStipend] = useState('₹30,000 / month');
   const [duration, setDuration] = useState('6 Months');

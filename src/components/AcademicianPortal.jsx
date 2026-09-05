@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { INITIAL_FACULTY_PROGRAMS, INITIAL_RESEARCH_CHALLENGES } from '../data/mockData';
 
-export default function AcademicianPortal() {
+export default function AcademicianPortal({ currentUser }) {
   const [activeTab, setActiveTab] = useState('fdp'); // 'fdp', 'research', 'guest'
 
   const [appliedFdp, setAppliedFdp] = useState([]);
@@ -26,6 +26,9 @@ export default function AcademicianPortal() {
   const [selectedChallenge, setSelectedChallenge] = useState(null);
   const [proposalText, setProposalText] = useState('');
   const [proposalSuccess, setProposalSuccess] = useState(false);
+
+  const facultyName = currentUser?.name || "Dr. Rajeshwari V. Sen";
+  const facultyInstitution = currentUser?.institution || "National Institute of Ayurveda, Jaipur";
 
   const handleApplyFdp = (id) => {
     if (!appliedFdp.includes(id)) {
@@ -57,13 +60,13 @@ export default function AcademicianPortal() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-bold text-white">Dr. Rajeshwari V. Sen</h2>
+                <h2 className="text-2xl font-bold text-white">{facultyName}</h2>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold badge-ayush flex items-center gap-1">
                   Professor & Head of Department
                 </span>
               </div>
               <p className="text-slate-400 text-sm mt-0.5">
-                Dept. of Dravyaguna & Phytochemistry • National Institute of Ayurveda, Jaipur
+                Dept. of Dravyaguna & Phytochemistry • {facultyInstitution}
               </p>
             </div>
           </div>

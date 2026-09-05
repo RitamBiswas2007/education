@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Award, 
   BarChart3, 
+  BookOpen,
   Building2, 
   CheckCircle2, 
   Cpu, 
@@ -22,6 +23,7 @@ import IndustryPortal from './components/IndustryPortal';
 import AcademicianPortal from './components/AcademicianPortal';
 import InstitutionAnalytics from './components/InstitutionAnalytics';
 import AuthScreen from './components/AuthScreen';
+import RoleSelectionModal from './components/RoleSelectionModal';
 
 import { 
   INITIAL_STUDENT_PROFILE, 
@@ -36,8 +38,9 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(null); // Authenticated User Profile
   const [session, setSession] = useState(null);
 
-  // Active Persona Role State
+  // Active Persona Role State (Locked strictly to the user's chosen role)
   const [activeRole, setActiveRole] = useState('student'); // 'student', 'industry', 'academician', 'admin'
+  const [showRoleSelection, setShowRoleSelection] = useState(false);
 
   // Global Stateful Data
   const [studentProfile, setStudentProfile] = useState(INITIAL_STUDENT_PROFILE);
@@ -50,42 +53,91 @@ export default function App() {
     if (!isSupabaseConfigured || !supabase) return;
 
     // Fetch initial auth session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       if (session?.user) {
+        const userId = session.user.id;
+        const localSavedRole = localStorage.getItem(`ayush_role_${userId}`);
+        const localRoleConfirmed = localStorage.getItem(`ayush_role_selected_${userId}`) === 'true';
+
+        let userRole = localSavedRole || session.user.user_metadata?.role;
+        let isRoleChosen = localRoleConfirmed || Boolean(session.user.user_metadata?.role_selected);
+
+        // Check Supabase public.profiles table
+        try {
+          const { data: dbProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (dbProfile?.role) {
+            userRole = dbProfile.role;
+            if (localRoleConfirmed || session.user.user_metadata?.role_selected) {
+              isRoleChosen = true;
+            }
+          }
+        } catch (e) {
+          console.warn("Could not query profile role:", e);
+        }
+
+        const finalRole = userRole || 'student';
         const profile = {
-          id: session.user.id,
+          id: userId,
           email: session.user.email,
           name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
-          role: session.user.user_metadata?.role || 'student',
-          institution: session.user.user_metadata?.institution || 'National Institute of Ayurveda',
-          degree: 'Ayush Degree Specialist',
+          role: finalRole,
+          institution: session.user.user_metadata?.institution || 'National Institute of Ayurveda, Jaipur',
+          degree: finalRole === 'academician' ? 'Ph.D. Dravyaguna & Phytochemistry' : 'B.A.M.S. & M.Sc. Herbal Bio-Tech',
           skillScore: 85,
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
         };
+
         setCurrentUser(profile);
-        setActiveRole(profile.role);
+        setActiveRole(finalRole);
+
+        // If user hasn't explicitly selected role yet, show onboarding
+        if (!isRoleChosen) {
+          setShowRoleSelection(true);
+        } else {
+          setShowRoleSelection(false);
+        }
       }
     });
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session?.user) {
+        const userId = session.user.id;
+        const localSavedRole = localStorage.getItem(`ayush_role_${userId}`);
+        const localRoleConfirmed = localStorage.getItem(`ayush_role_selected_${userId}`) === 'true';
+
+        const finalRole = localSavedRole || session.user.user_metadata?.role || 'student';
+        const isRoleChosen = localRoleConfirmed || Boolean(session.user.user_metadata?.role_selected);
+
         const profile = {
-          id: session.user.id,
+          id: userId,
           email: session.user.email,
           name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
-          role: session.user.user_metadata?.role || 'student',
-          institution: session.user.user_metadata?.institution || 'National Institute of Ayurveda',
-          degree: 'Ayush Degree Specialist',
+          role: finalRole,
+          institution: session.user.user_metadata?.institution || 'National Institute of Ayurveda, Jaipur',
+          degree: finalRole === 'academician' ? 'Ph.D. Dravyaguna & Phytochemistry' : 'B.A.M.S. & M.Sc. Herbal Bio-Tech',
           skillScore: 85,
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
         };
+
         setCurrentUser(profile);
-        setActiveRole(profile.role);
+        setActiveRole(finalRole);
+
+        if (!isRoleChosen) {
+          setShowRoleSelection(true);
+        } else {
+          setShowRoleSelection(false);
+        }
       } else {
         setCurrentUser(null);
+        setShowRoleSelection(false);
       }
     });
 
@@ -106,7 +158,7 @@ export default function App() {
             location: j.location,
             stipend: j.stipend,
             duration: j.duration,
-            type: "Full-Time Internship",
+            type: j.type || "Full-Time Internship",
             domain: j.domain,
             matchScore: j.match_score || 85,
             skillsRequired: j.skills_required || ["Phytochemistry & QC"],
@@ -132,13 +184,29 @@ export default function App() {
     }
     setCurrentUser(null);
     setSession(null);
+    setShowRoleSelection(false);
   };
 
   // Auth Success Handler
-  const handleAuthSuccess = (userProfile, userSession) => {
+  const handleAuthSuccess = (userProfile, userSession, isNewUser = false) => {
     setCurrentUser(userProfile);
     setSession(userSession);
-    setActiveRole(userProfile.role || 'student');
+
+    const userId = userProfile.id;
+    const localSavedRole = localStorage.getItem(`ayush_role_${userId}`);
+    const localRoleConfirmed = localStorage.getItem(`ayush_role_selected_${userId}`) === 'true';
+
+    if (localRoleConfirmed && localSavedRole) {
+      setActiveRole(localSavedRole);
+      setShowRoleSelection(false);
+    } else if (isNewUser || userProfile.needsRoleSelection || !localRoleConfirmed) {
+      setActiveRole(userProfile.role || 'student');
+      setShowRoleSelection(true);
+    } else {
+      setActiveRole(userProfile.role || 'student');
+      setShowRoleSelection(false);
+    }
+
     setStudentProfile(prev => ({
       ...prev,
       id: userProfile.id,
@@ -149,19 +217,93 @@ export default function App() {
     }));
   };
 
-  // Guest Login Handler
+  // Guest Login Handler (Remembers previously selected role so guest doesn't enter again)
   const handleGuestLogin = () => {
+    const hasSelectedGuestRole = localStorage.getItem('ayush_guest_role_selected') === 'true';
+    const savedGuestRole = localStorage.getItem('ayush_guest_role');
+    const savedGuestInst = localStorage.getItem('ayush_guest_institution');
+
+    const guestRole = savedGuestRole || 'student';
     const guestUser = {
       id: 'GUEST-USER-2026',
-      email: 'evaluator@ayush.gov.in',
-      name: 'Executive Guest User',
-      role: 'student',
-      institution: 'Ministry of Ayush Evaluation Desk',
-      degree: 'Senior Evaluator',
+      email: 'guest.evaluator@ayush.gov.in',
+      name: 'Guest Evaluator',
+      role: guestRole,
+      institution: savedGuestInst || 'Ministry of Ayush Evaluation Desk',
+      degree: guestRole === 'academician' ? 'Faculty Evaluator' : guestRole === 'industry' ? 'Corporate Talent Lead' : 'Senior Ayush Scholar',
       skillScore: 88,
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
     };
+
     setCurrentUser(guestUser);
+
+    if (hasSelectedGuestRole && savedGuestRole) {
+      // User has previously entered it, shouldn't enter it again!
+      setActiveRole(savedGuestRole);
+      setShowRoleSelection(false);
+    } else {
+      // First time guest login, prompt them to pick their role
+      setActiveRole('student');
+      setShowRoleSelection(true);
+    }
+  };
+
+  // Role Confirmation Handler (Saves permanently to Supabase and localStorage)
+  const handleConfirmRole = async (selectedRole, institutionInput) => {
+    setActiveRole(selectedRole);
+    setShowRoleSelection(false);
+
+    const roleDegreeMap = {
+      student: 'B.A.M.S. & M.Sc. Herbal Bio-Technology',
+      academician: 'Ph.D. Dravyaguna & Phytochemistry',
+      industry: 'Head of Talent Acquisition & R&D',
+      admin: 'Dean of Academic & Clinical Affairs'
+    };
+
+    const updatedInst = institutionInput || currentUser?.institution || 'National Institute of Ayurveda, Jaipur';
+
+    setCurrentUser(prev => ({
+      ...prev,
+      role: selectedRole,
+      institution: updatedInst,
+      degree: roleDegreeMap[selectedRole] || prev?.degree
+    }));
+
+    if (currentUser?.id) {
+      if (currentUser.id.startsWith('GUEST')) {
+        localStorage.setItem('ayush_guest_role', selectedRole);
+        localStorage.setItem('ayush_guest_role_selected', 'true');
+        if (institutionInput) {
+          localStorage.setItem('ayush_guest_institution', institutionInput);
+        }
+      } else {
+        localStorage.setItem(`ayush_role_${currentUser.id}`, selectedRole);
+        localStorage.setItem(`ayush_role_selected_${currentUser.id}`, 'true');
+
+        if (isSupabaseConfigured && supabase) {
+          try {
+            await supabase.from('profiles').upsert({
+              id: currentUser.id,
+              email: currentUser.email,
+              full_name: currentUser.name,
+              role: selectedRole,
+              institution: updatedInst,
+              degree: roleDegreeMap[selectedRole] || 'Ayush Specialist'
+            });
+
+            await supabase.auth.updateUser({
+              data: {
+                role: selectedRole,
+                role_selected: true,
+                institution: updatedInst
+              }
+            });
+          } catch (err) {
+            console.warn("Failed to persist role in Supabase:", err);
+          }
+        }
+      }
+    }
   };
 
   // Apply Job Handler
@@ -281,54 +423,32 @@ export default function App() {
             </div>
           </div>
 
-          {/* Persona Role Switcher */}
-          <div className="hidden lg:flex items-center gap-1 bg-slate-900/90 p-1 rounded-2xl border border-slate-800 shadow-inner">
-            <button
-              onClick={() => setActiveRole('student')}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                activeRole === 'student'
-                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <GraduationCap className="w-3.5 h-3.5" />
-              <span>Student</span>
-            </button>
+          {/* Locked Persona Workspace Indicator with Switch Option */}
+          <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
+              activeRole === 'student' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' :
+              activeRole === 'academician' ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' :
+              activeRole === 'industry' ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300' :
+              'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
+            }`}>
+              {activeRole === 'student' && <GraduationCap className="w-4 h-4 text-emerald-400" />}
+              {activeRole === 'academician' && <BookOpen className="w-4 h-4 text-amber-400" />}
+              {activeRole === 'industry' && <Building2 className="w-4 h-4 text-cyan-400" />}
+              {activeRole === 'admin' && <BarChart3 className="w-4 h-4 text-indigo-400" />}
+              <span>
+                {activeRole === 'student' && 'Student Workspace'}
+                {activeRole === 'academician' && 'Teacher & Faculty Workspace'}
+                {activeRole === 'industry' && 'Corporate Recruiter Workspace'}
+                {activeRole === 'admin' && 'Institutional Admin Workspace'}
+              </span>
+            </div>
 
             <button
-              onClick={() => setActiveRole('industry')}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                activeRole === 'industry'
-                  ? 'bg-gradient-to-r from-cyan-500 to-indigo-500 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+              onClick={() => setShowRoleSelection(true)}
+              title="Change your active workspace role"
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 text-[11px] font-semibold transition-all flex items-center gap-1 cursor-pointer"
             >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Industry</span>
-            </button>
-
-            <button
-              onClick={() => setActiveRole('academician')}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                activeRole === 'academician'
-                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span>Academician</span>
-            </button>
-
-            <button
-              onClick={() => setActiveRole('admin')}
-              className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 ${
-                activeRole === 'admin'
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-md'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <BarChart3 className="w-3.5 h-3.5" />
-              <span>Admin</span>
+              <span>Switch Role</span>
             </button>
           </div>
 
@@ -349,7 +469,7 @@ export default function App() {
             <button
               onClick={handleLogOut}
               title="Log Out of Session"
-              className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-all font-bold text-xs flex items-center gap-1.5"
+              className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition-all font-bold text-xs flex items-center gap-1.5 cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Log Out</span>
@@ -363,7 +483,7 @@ export default function App() {
       <div className="bg-slate-900/60 border-b border-slate-800/60 py-2 px-4 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-slate-300">Active Module:</span>
+            <span className="font-semibold text-slate-300">Active Workspace:</span>
             {activeRole === 'student' && <span className="text-emerald-400 font-bold">🎓 Skill Assessment Diagnostics, Competency Mapping & Industry Opportunities</span>}
             {activeRole === 'industry' && <span className="text-cyan-400 font-bold">🏢 Corporate Recruiter Portal, Candidate AI Match Ranking & Talent Acquisition</span>}
             {activeRole === 'academician' && <span className="text-amber-400 font-bold">👨‍🏫 Faculty Sabbaticals, Research Grant Consultancy & Mentorship Hub</span>}
@@ -376,7 +496,7 @@ export default function App() {
         </div>
       </div>
 
-      {/* Main Content Body */}
+      {/* Main Content Body - Strictly segregated according to activeRole */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeRole === 'student' && (
           <StudentPortal
@@ -394,11 +514,12 @@ export default function App() {
             onAddJob={handleAddJob}
             candidates={candidates}
             onUpdateCandidateStatus={handleUpdateCandidateStatus}
+            currentUser={currentUser}
           />
         )}
 
         {activeRole === 'academician' && (
-          <AcademicianPortal />
+          <AcademicianPortal currentUser={currentUser} />
         )}
 
         {activeRole === 'admin' && (
@@ -421,6 +542,16 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Role Selection Onboarding Modal */}
+      {showRoleSelection && (
+        <RoleSelectionModal
+          currentUserName={currentUser?.name}
+          userEmail={currentUser?.email}
+          initialRole={activeRole}
+          onConfirmRole={handleConfirmRole}
+        />
+      )}
     </div>
   );
 }
