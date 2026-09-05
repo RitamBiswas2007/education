@@ -13,6 +13,7 @@ import {
   LogOut, 
   ShieldCheck, 
   Sparkles, 
+  User,
   UserCheck, 
   Users, 
   Zap 
@@ -24,6 +25,8 @@ import AcademicianPortal from './components/AcademicianPortal';
 import InstitutionAnalytics from './components/InstitutionAnalytics';
 import AuthScreen from './components/AuthScreen';
 import RoleSelectionModal from './components/RoleSelectionModal';
+import DisclaimerModal from './components/DisclaimerModal';
+import ProfileModal from './components/ProfileModal';
 
 import { 
   INITIAL_STUDENT_PROFILE, 
@@ -37,6 +40,14 @@ export default function App() {
   // Auth & Session State
   const [currentUser, setCurrentUser] = useState(null); // Authenticated User Profile
   const [session, setSession] = useState(null);
+
+  // Disclaimer & Privacy Policy Modal State (Shown on first entry)
+  const [showDisclaimer, setShowDisclaimer] = useState(
+    () => localStorage.getItem('ayush_disclaimer_accepted') !== 'true'
+  );
+
+  // Profile Section Modal State
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // Active Persona Role State (Locked strictly to the user's chosen role)
   const [activeRole, setActiveRole] = useState('student'); // 'student', 'industry', 'academician', 'admin'
@@ -306,6 +317,43 @@ export default function App() {
     }
   };
 
+  // Profile Update Handler (Saves changes to Supabase & localStorage)
+  const handleSaveProfile = async (updatedData) => {
+    setCurrentUser(updatedData);
+
+    // Sync student profile if active role is student
+    setStudentProfile(prev => ({
+      ...prev,
+      id: updatedData.id,
+      name: updatedData.name,
+      email: updatedData.email,
+      institution: updatedData.institution,
+      degree: updatedData.degree,
+      bio: updatedData.bio,
+      avatar: updatedData.avatar
+    }));
+
+    if (updatedData?.id) {
+      localStorage.setItem(`ayush_profile_${updatedData.id}`, JSON.stringify(updatedData));
+
+      if (isSupabaseConfigured && supabase && !updatedData.id.startsWith('GUEST')) {
+        try {
+          await supabase.from('profiles').upsert({
+            id: updatedData.id,
+            email: updatedData.email,
+            full_name: updatedData.name,
+            institution: updatedData.institution,
+            degree: updatedData.degree,
+            bio: updatedData.bio,
+            avatar_url: updatedData.avatar
+          });
+        } catch (err) {
+          console.warn("Error updating profile in Supabase:", err);
+        }
+      }
+    }
+  };
+
   // Apply Job Handler
   const handleApplyJob = async (jobId) => {
     if (!applications.includes(jobId)) {
@@ -385,10 +433,21 @@ export default function App() {
   // Render Auth Screen if not signed in
   if (!currentUser) {
     return (
-      <AuthScreen
-        onAuthSuccess={handleAuthSuccess}
-        onGuestLogin={handleGuestLogin}
-      />
+      <>
+        <AuthScreen
+          onAuthSuccess={handleAuthSuccess}
+          onGuestLogin={handleGuestLogin}
+        />
+
+        {/* Disclaimer & Privacy Policy Modal on initial entry */}
+        {showDisclaimer && (
+          <DisclaimerModal
+            onAccept={() => setShowDisclaimer(false)}
+            onClose={() => setShowDisclaimer(false)}
+            canCloseWithoutAccept={localStorage.getItem('ayush_disclaimer_accepted') === 'true'}
+          />
+        )}
+      </>
     );
   }
 
@@ -423,7 +482,7 @@ export default function App() {
             </div>
           </div>
 
-          {/* Locked Persona Workspace Indicator with Switch Option */}
+          {/* Locked Persona Workspace Indicator (Strictly 1 role at a time, switcher removed from header as requested) */}
           <div className="flex items-center gap-2">
             <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
               activeRole === 'student' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' :
@@ -442,30 +501,42 @@ export default function App() {
                 {activeRole === 'admin' && 'Institutional Admin Workspace'}
               </span>
             </div>
-
-            <button
-              onClick={() => setShowRoleSelection(true)}
-              title="Change your active workspace role"
-              className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-slate-200 text-[11px] font-semibold transition-all flex items-center gap-1 cursor-pointer"
-            >
-              <span>Switch Role</span>
-            </button>
           </div>
 
-          {/* Logged In User Profile & Log Out Button */}
+          {/* Logged In User Profile, Edit Profile & Log Out */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
+            {/* Clickable Profile Summary Badge */}
+            <div 
+              onClick={() => setShowProfileModal(true)}
+              title="Click to view & edit your profile and switch roles"
+              className="flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-800 hover:border-emerald-500/50 transition-all cursor-pointer group shadow-sm"
+            >
               <img 
                 src={currentUser.avatar} 
                 alt={currentUser.name}
-                className="w-7 h-7 rounded-full object-cover border border-emerald-400"
+                className="w-7 h-7 rounded-full object-cover border border-emerald-400 group-hover:scale-105 transition-all"
               />
               <div className="hidden sm:block text-left">
-                <span className="text-xs font-bold text-white block leading-tight">{currentUser.name}</span>
-                <span className="text-[10px] text-emerald-400 block font-mono leading-tight">{currentUser.email}</span>
+                <span className="text-xs font-bold text-white group-hover:text-emerald-300 block leading-tight transition-colors">
+                  {currentUser.name}
+                </span>
+                <span className="text-[10px] text-emerald-400 block font-mono leading-tight">
+                  {currentUser.email}
+                </span>
               </div>
             </div>
 
+            {/* Dedicated My Profile Button */}
+            <button
+              onClick={() => setShowProfileModal(true)}
+              title="Edit Profile & Role Settings"
+              className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+            >
+              <User className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden md:inline">My Profile</span>
+            </button>
+
+            {/* Log Out Button */}
             <button
               onClick={handleLogOut}
               title="Log Out of Session"
@@ -534,7 +605,13 @@ export default function App() {
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>Ministry of Ayush, Government of India • National Skill Ecosystem Infrastructure</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowDisclaimer(true)}
+              className="hover:text-emerald-400 underline transition-colors cursor-pointer text-xs"
+            >
+              Disclaimer & Privacy Policy
+            </button>
             <span>Authenticated Account: <strong className="text-slate-300">{currentUser.email}</strong></span>
             {isSupabaseConfigured && (
               <span className="text-cyan-400 font-bold">⚡ Enterprise Cloud Active</span>
@@ -542,6 +619,26 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Disclaimer & Privacy Policy Modal */}
+      {showDisclaimer && (
+        <DisclaimerModal
+          onAccept={() => setShowDisclaimer(false)}
+          onClose={() => setShowDisclaimer(false)}
+          canCloseWithoutAccept={localStorage.getItem('ayush_disclaimer_accepted') === 'true'}
+        />
+      )}
+
+      {/* User Profile & Role Switch Modal */}
+      {showProfileModal && (
+        <ProfileModal
+          currentUser={currentUser}
+          activeRole={activeRole}
+          onSaveProfile={handleSaveProfile}
+          onSwitchRole={handleConfirmRole}
+          onClose={() => setShowProfileModal(false)}
+        />
+      )}
 
       {/* Role Selection Onboarding Modal */}
       {showRoleSelection && (
