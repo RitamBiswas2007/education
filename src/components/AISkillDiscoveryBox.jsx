@@ -90,7 +90,18 @@ export default function AISkillDiscoveryBox({
       return;
     }
     const updatedDomains = activeDomains.filter(d => d !== domainId);
-    onUpdateProfileSkills(updatedDomains);
+    const currentSkills = Array.isArray(studentProfile?.skills) ? studentProfile.skills : [];
+    const remainingSkills = currentSkills.filter(s => {
+      const sName = typeof s === 'string' ? s : s.name;
+      const sDom = findDomainForSkill(sName);
+      return sDom !== domainId;
+    });
+    onUpdateProfileSkills(updatedDomains, null, null, remainingSkills);
+    setFeedbackMsg({
+      title: 'Domain Removed',
+      subtitle: 'Diagnostic quiz and focus skills updated!'
+    });
+    setTimeout(() => setFeedbackMsg(null), 3000);
   };
 
   // Add a specific skill (from search result, click, or typing)
@@ -100,6 +111,13 @@ export default function AISkillDiscoveryBox({
       : skillItemOrName.name;
 
     if (!skillName) return;
+
+    // If already added, toggle remove it
+    const isAlreadyAdded = activeSkills.some(s => s.toLowerCase() === skillName.toLowerCase());
+    if (isAlreadyAdded) {
+      handleRemoveSkill(skillName);
+      return;
+    }
 
     // Resolve target domain
     const targetDomainId = typeof skillItemOrName === 'object' && skillItemOrName.domainId
@@ -134,11 +152,6 @@ export default function AISkillDiscoveryBox({
 
   // Remove a specific skill
   const handleRemoveSkill = (skillNameToRemove) => {
-    if (activeSkills.length <= 1) {
-      alert("Please keep at least 1 skill for your competency radar.");
-      return;
-    }
-
     const currentSkills = Array.isArray(studentProfile?.skills) ? studentProfile.skills : [];
     const updatedSkills = currentSkills.filter(s => {
       const sName = typeof s === 'string' ? s : s.name;
@@ -146,6 +159,22 @@ export default function AISkillDiscoveryBox({
     });
 
     onUpdateProfileSkills(activeDomains, null, null, updatedSkills);
+
+    setFeedbackMsg({
+      title: `Skill Removed: ${skillNameToRemove}`,
+      subtitle: 'Competency radar and diagnostic assessment updated!'
+    });
+    setTimeout(() => setFeedbackMsg(null), 3000);
+  };
+
+  // Clear all custom skills
+  const handleClearAllSkills = () => {
+    onUpdateProfileSkills(activeDomains, null, null, []);
+    setFeedbackMsg({
+      title: 'Skills Cleared',
+      subtitle: 'You can now select or search fresh focus skills'
+    });
+    setTimeout(() => setFeedbackMsg(null), 3000);
   };
 
   // Submit search query via form button / enter key
@@ -288,18 +317,22 @@ export default function AISkillDiscoveryBox({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAddSkill(sk);
+                          if (isSkillAdded) {
+                            handleRemoveSkill(sk.name);
+                          } else {
+                            handleAddSkill(sk);
+                          }
                         }}
                         className={`text-[11px] px-2.5 py-1 rounded-lg font-bold shrink-0 transition-all flex items-center gap-1 cursor-pointer ${
                           isSkillAdded
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            ? 'bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/40'
                             : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400 shadow-sm'
                         }`}
                       >
                         {isSkillAdded ? (
                           <>
-                            <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
-                            <span>Added</span>
+                            <X className="w-3 h-3 text-rose-400" />
+                            <span>Remove</span>
                           </>
                         ) : (
                           <>
@@ -330,7 +363,7 @@ export default function AISkillDiscoveryBox({
                   return (
                     <div
                       key={domain.id}
-                      onClick={() => handleAddDomain(domain.id)}
+                      onClick={() => isSelected ? handleRemoveDomain(domain.id) : handleAddDomain(domain.id)}
                       className={`p-3 rounded-xl border transition-all cursor-pointer flex items-start gap-2.5 ${
                         isSelected 
                           ? 'bg-emerald-950/30 border-emerald-500/60 ring-1 ring-emerald-500/30' 
@@ -374,10 +407,21 @@ export default function AISkillDiscoveryBox({
         {/* Active Skills List */}
         <div>
           <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-slate-300 font-bold flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Your Active Focus Skills ({activeSkills.length}):</span>
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-300 font-bold flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Your Active Focus Skills ({activeSkills.length}):</span>
+              </span>
+              {activeSkills.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAllSkills}
+                  className="text-[10px] text-rose-400 hover:text-rose-300 underline font-medium cursor-pointer"
+                >
+                  Clear All
+                </button>
+              )}
+            </div>
             <span className="text-[11px] text-cyan-400 font-mono">
               Assessed in Diagnostic Quiz
             </span>

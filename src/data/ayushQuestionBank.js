@@ -1175,6 +1175,13 @@ export function createFreshStudentProfile(user = {}) {
     readinessIndex: user.readinessIndex || 'Diagnostic Pending (Take AI Quiz)',
     skills: generateStudentSkillsFromDomains(domains),
     verifiedCertifications: user.verifiedCertifications || [], // Starts clean, earned via AI Diagnostic assessment!
-    completedCourses: generateRecommendedCoursesFromDomains(domains)
+    completedCourses: generateRecommendedCoursesFromDomains(domains),
+    jobPreferences: user.jobPreferences || {
+      targetRole: 'Ayush Diagnostic AI & ML Engineer',
+      domain: domains[0] || 'ai_healthtech',
+      workMode: 'Hybrid', // 'Remote' | 'On-site' | 'Hybrid'
+      expectedSalary: '₹45,000 / month',
+      preferredLocation: 'Bengaluru / Remote'
+    }
   };
 }

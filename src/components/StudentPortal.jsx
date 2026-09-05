@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ArrowLeft,
   Award, 
@@ -23,7 +23,18 @@ import {
   Zap,
   School,
   AlertCircle,
-  HelpCircle
+  HelpCircle,
+  Building2,
+  DollarSign,
+  MapPin,
+  Laptop,
+  Check,
+  Edit3,
+  AlertTriangle,
+  X,
+  Compass,
+  Star,
+  CheckCheck
 } from 'lucide-react';
 import { 
   getTenQuestionsForDomains, 
@@ -70,10 +81,48 @@ export default function StudentPortal({
   const [quizScore, setQuizScore] = useState(0);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizFeedback, setQuizFeedback] = useState(null);
+  const [missedQuestions, setMissedQuestions] = useState([]);
 
   // Job Search Filters
   const [jobSearch, setJobSearch] = useState('');
   const [domainFilter, setDomainFilter] = useState('All');
+  const [workModeFilter, setWorkModeFilter] = useState('All');
+
+  // Student Job & Internship Career Preferences
+  const [jobPreferences, setJobPreferences] = useState(() => {
+    return studentProfile?.jobPreferences || {
+      targetRole: 'AI Health Informatics Specialist',
+      domain: 'ai_healthtech',
+      workMode: 'Hybrid',
+      expectedSalary: '₹45,000 / month',
+      preferredLocation: 'Bengaluru / Hybrid'
+    };
+  });
+  const [isEditingPreferences, setIsEditingPreferences] = useState(false);
+  const [prefForm, setPrefForm] = useState({ ...jobPreferences });
+  const [prefSavedToast, setPrefSavedToast] = useState(false);
+
+  useEffect(() => {
+    if (studentProfile?.jobPreferences) {
+      setJobPreferences(studentProfile.jobPreferences);
+      setPrefForm(studentProfile.jobPreferences);
+    }
+  }, [studentProfile?.jobPreferences]);
+
+  const handleSavePreferences = (e) => {
+    if (e) e.preventDefault();
+    setJobPreferences(prefForm);
+    setStudentProfile(prev => ({
+      ...prev,
+      jobPreferences: prefForm
+    }));
+    if (prefForm.domain) {
+      setDomainFilter(prefForm.domain);
+    }
+    setIsEditingPreferences(false);
+    setPrefSavedToast(true);
+    setTimeout(() => setPrefSavedToast(false), 3000);
+  };
 
   // Handle skill/domain updates from AI Skill Discovery Box
   const handleUpdateProfileSkills = (newDomains, newSkillName, skillObj, explicitSkillsList = null) => {
@@ -111,6 +160,8 @@ export default function StudentPortal({
       // Reset quiz so student gets the fresh 10 questions based on their updated skills and domains
       setQuizIndex(0);
       setSelectedAnswer(null);
+      setQuizScore(0);
+      setMissedQuestions([]);
       setQuizCompleted(false);
       setQuizFeedback(null);
 
@@ -153,6 +204,17 @@ export default function StudentPortal({
         explanation: currentQ.explanation
       });
     } else {
+      setMissedQuestions(prev => [
+        ...prev,
+        {
+          question: currentQ.question,
+          category: currentQ.category,
+          userAnswer: currentQ.options[selectedAnswer],
+          correctAnswer: currentQ.options[currentQ.correctAnswer],
+          explanation: currentQ.explanation,
+          skillBoost: currentQ.skillBoost
+        }
+      ]);
       setQuizFeedback({ 
         type: 'error', 
         text: `Incorrect. Correct answer: ${currentQ.options[currentQ.correctAnswer]}`,
@@ -181,7 +243,7 @@ export default function StudentPortal({
           id: `AYUSH-EVAL-${Date.now().toString().slice(-6)}`,
           score: `${finalCalculatedScore}% (${newScore}/10)`,
           domains: studentDomains.map(d => {
-            const dom = AYUSH_DOMAINS.find(item => item.id === d);
+            const dom = AYUSH_DOMAINS.find(item => item.id === d) || MASTER_DOMAINS.find(item => item.id === d);
             return dom ? dom.name.split('&')[0].trim() : d;
           }).join(', ')
         };
@@ -205,15 +267,65 @@ export default function StudentPortal({
     setQuizIndex(0);
     setSelectedAnswer(null);
     setQuizScore(0);
+    setMissedQuestions([]);
     setQuizCompleted(false);
+    setQuizFeedback(null);
   };
+
+  // Grade and Quality Evaluation for Job Placement
+  const gradeInfo = useMemo(() => {
+    if (quizScore >= 9) return { 
+      grade: 'A+', 
+      title: 'Elite Industry Ready', 
+      color: 'emerald', 
+      badgeClass: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+      summary: 'Exceptional mastery across specialized clinical algorithms, pharmacopoeial compliance, and computational frameworks.',
+      hiringStatus: 'Top 5% Candidate Pool • Fast-track eligible for High-Tier Stipends & Corporate R&D Roles'
+    };
+    if (quizScore >= 8) return { 
+      grade: 'A', 
+      title: 'Industry Ready', 
+      color: 'teal', 
+      badgeClass: 'bg-teal-500/20 text-teal-300 border-teal-500/40',
+      summary: 'Strong grasp of core scientific & regulatory guidelines with solid analytical problem-solving capability in chosen domains.',
+      hiringStatus: 'Fully Qualified for Direct Internship Placement & Graduate Trainee Positions'
+    };
+    if (quizScore >= 6) return { 
+      grade: 'B', 
+      title: 'Placement Eligible (Bridging Recommended)', 
+      color: 'cyan', 
+      badgeClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+      summary: 'Solid foundational baseline, but demonstrates gaps in advanced technical and clinical standardization competencies.',
+      hiringStatus: 'Eligible for Developmental Internships • Complete 1-2 Recommended Bridge Modules to Boost Hiring Match'
+    };
+    if (quizScore >= 4) return { 
+      grade: 'C', 
+      title: 'Foundational (Domain Bridging Needed)', 
+      color: 'amber', 
+      badgeClass: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      summary: 'Basic conceptual awareness, but notable skill gaps exist in applied real-world methodologies and compliance standards.',
+      hiringStatus: 'Skill Enhancement Required Before Live Employer Interviews • Focus on Identified Gap Areas'
+    };
+    return { 
+      grade: 'D', 
+      title: 'Remediation Required', 
+      color: 'rose', 
+      badgeClass: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+      summary: 'Critical skill gaps detected across tested domains. Immediate guided remediation suggested before recruiter assessment.',
+      hiringStatus: 'Not Yet Placement-Ready • Recommended Retaking Assessment After Module Completion'
+    };
+  }, [quizScore]);
 
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = job.title.toLowerCase().includes(jobSearch.toLowerCase()) ||
                           job.company.toLowerCase().includes(jobSearch.toLowerCase()) ||
                           job.description.toLowerCase().includes(jobSearch.toLowerCase());
-    const matchesDomain = domainFilter === 'All' || job.domain === domainFilter;
-    return matchesSearch && matchesDomain;
+    const matchesDomain = domainFilter === 'All' || 
+                          job.domainId === domainFilter || 
+                          job.domain === domainFilter ||
+                          (domainFilter && job.domain.toLowerCase().includes(domainFilter.toLowerCase()));
+    const matchesMode = workModeFilter === 'All' || job.mode === workModeFilter;
+    return matchesSearch && matchesDomain && matchesMode;
   });
 
   // Calculate polygon points for competency radar dynamically based on student's actual skills
@@ -316,8 +428,49 @@ export default function StudentPortal({
           </div>
         </div>
 
+        {/* Quick Career & Internship Preferences Summary Bar */}
+        <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-slate-400 font-semibold flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5 text-cyan-400" /> Target Career:
+            </span>
+            <span className="font-bold text-white bg-slate-800/90 px-2.5 py-0.5 rounded-lg border border-slate-700">
+              {jobPreferences.targetRole}
+            </span>
+            <span className="text-slate-600">•</span>
+            <span className="text-slate-400 font-medium">Domain:</span>
+            <span className="font-semibold text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/30">
+              {MASTER_DOMAINS.find(d => d.id === jobPreferences.domain)?.name.split('&')[0] || jobPreferences.domain}
+            </span>
+            <span className="text-slate-600">•</span>
+            <span className="text-slate-400 font-medium">Mode:</span>
+            <span className={`font-semibold px-2 py-0.5 rounded-md text-[11px] border ${
+              jobPreferences.workMode === 'Remote' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' :
+              jobPreferences.workMode === 'Hybrid' ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30' :
+              'bg-amber-500/10 text-amber-300 border-amber-500/30'
+            }`}>
+              {jobPreferences.workMode}
+            </span>
+            <span className="text-slate-600">•</span>
+            <span className="text-slate-400 font-medium">Target Salary:</span>
+            <span className="font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30">
+              {jobPreferences.expectedSalary}
+            </span>
+          </div>
+
+          <button
+            onClick={() => {
+              navigateTo('jobs');
+              setIsEditingPreferences(true);
+            }}
+            className="text-cyan-400 hover:text-cyan-300 font-bold text-xs flex items-center gap-1.5 hover:underline cursor-pointer ml-auto"
+          >
+            <Edit3 className="w-3.5 h-3.5" /> Edit Preferences
+          </button>
+        </div>
+
         {/* Sub-Navigation Tabs */}
-        <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-slate-800/80">
+        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-800/80">
           {/* Back Button — shown when not on default tab */}
           {tabHistory.length > 1 && (
             <button
@@ -575,28 +728,197 @@ export default function StudentPortal({
 
       {/* TAB 2: AI SKILL DIAGNOSTIC QUIZ (10 MCQs ARRANGED BY STUDENT DOMAINS) */}
       {activeTab === 'assessment' && (
-        <div className="glass-panel rounded-2xl p-8 max-w-3xl mx-auto">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="glass-panel rounded-2xl p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
             <button
               onClick={navigateBack}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Skill Radar
             </button>
 
             {/* Domain & Skill tags being assessed */}
-            <div className="flex flex-wrap items-center gap-1.5 max-w-lg justify-end">
-              <span className="text-[11px] text-slate-400 hidden sm:inline font-medium">Assessing Your Disciplines:</span>
+            <div className="flex flex-wrap items-center gap-1.5 justify-end">
+              <span className="text-[11px] text-slate-400 hidden sm:inline font-medium">Assessing Disciplines:</span>
               {studentDomains.map(dId => {
-                const domObj = MASTER_DOMAINS.find(d => d.id === dId);
+                const domObj = MASTER_DOMAINS.find(d => d.id === dId) || AYUSH_DOMAINS.find(d => d.id === dId);
                 return (
-                  <span key={dId} className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                  <span key={dId} className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                     <span>{domObj?.icon || '⭐'}</span>
                     <span>{domObj?.badge || dId}</span>
                   </span>
                 );
               })}
             </div>
+          </div>
+
+          {/* Target Job & Placement Preferences Form / Card */}
+          <div className="glass-card rounded-2xl p-5 border border-cyan-500/30 bg-cyan-950/20 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center font-bold">
+                  <Target className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    <span>Your Career & Job Target Preferences</span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-normal">
+                      Recruiter Scoring Benchmark
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    Diagnostic assessment and quality grading evaluate you against this specific job role & salary expectation
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsEditingPreferences(!isEditingPreferences)}
+                className="px-3 py-1 rounded-xl text-xs font-bold bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/40 flex items-center gap-1.5 transition-all self-start sm:self-auto cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{isEditingPreferences ? 'Hide Editor' : 'Edit Target & Salary'}</span>
+              </button>
+            </div>
+
+            {!isEditingPreferences ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1">Target Job Role</span>
+                  <strong className="text-white text-xs line-clamp-1">{jobPreferences.targetRole}</strong>
+                </div>
+                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1">Internship Domain</span>
+                  <strong className="text-emerald-300 text-xs line-clamp-1">
+                    {MASTER_DOMAINS.find(d => d.id === jobPreferences.domain)?.name.split('&')[0] || jobPreferences.domain}
+                  </strong>
+                </div>
+                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1">Work Mode</span>
+                  <span className={`inline-block px-2 py-0.5 rounded font-bold text-[11px] ${
+                    jobPreferences.workMode === 'Remote' ? 'bg-emerald-500/20 text-emerald-300' :
+                    jobPreferences.workMode === 'Hybrid' ? 'bg-cyan-500/20 text-cyan-300' :
+                    'bg-amber-500/20 text-amber-300'
+                  }`}>
+                    {jobPreferences.workMode}
+                  </span>
+                </div>
+                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1">Expected Salary / Stipend</span>
+                  <strong className="text-amber-300 text-xs font-mono">{jobPreferences.expectedSalary}</strong>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSavePreferences} className="space-y-4 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Target Job Role You Want</label>
+                    <input
+                      type="text"
+                      value={prefForm.targetRole}
+                      onChange={e => setPrefForm(prev => ({ ...prev, targetRole: e.target.value }))}
+                      placeholder="e.g. AI Health Informatics Specialist"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      required
+                    />
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {['AI Health Informatics', 'Phytochemistry R&D', 'Clinical Research Associate', 'Data Analyst - Ayush', 'Tele-Ayush Engineer'].map(sugg => (
+                        <button
+                          type="button"
+                          key={sugg}
+                          onClick={() => setPrefForm(prev => ({ ...prev, targetRole: sugg }))}
+                          className="text-[10px] px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 cursor-pointer"
+                        >
+                          + {sugg}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Internship Focus Domain</label>
+                    <select
+                      value={prefForm.domain}
+                      onChange={e => setPrefForm(prev => ({ ...prev, domain: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
+                    >
+                      {MASTER_DOMAINS.map(d => (
+                        <option key={d.id} value={d.id}>
+                          {d.icon} {d.name} ({d.badge})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Preferred Work Mode</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['Remote', 'Hybrid', 'On-site'].map(mode => (
+                        <button
+                          type="button"
+                          key={mode}
+                          onClick={() => setPrefForm(prev => ({ ...prev, workMode: mode }))}
+                          className={`py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                            prefForm.workMode === mode 
+                              ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-extrabold shadow-sm' 
+                              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                          }`}
+                        >
+                          {mode}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Expected Salary / Stipend (Written)</label>
+                    <input
+                      type="text"
+                      value={prefForm.expectedSalary}
+                      onChange={e => setPrefForm(prev => ({ ...prev, expectedSalary: e.target.value }))}
+                      placeholder="e.g. ₹45,000 / month (Stipend)"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-500"
+                      required
+                    />
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {['₹30,000 / month', '₹45,000 / month', '₹60,000 / month', '₹6.5 - 9 LPA'].map(sal => (
+                        <button
+                          type="button"
+                          key={sal}
+                          onClick={() => setPrefForm(prev => ({ ...prev, expectedSalary: sal }))}
+                          className="text-[10px] px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 cursor-pointer"
+                        >
+                          {sal}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-cyan-500/20">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingPreferences(false)}
+                    className="px-4 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-bold text-xs hover:brightness-110 transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Save Career Preferences
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {prefSavedToast && (
+              <div className="p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Preferences saved! Test grading and matching internships are aligned.
+              </div>
+            )}
           </div>
 
           {!quizCompleted ? (
@@ -673,70 +995,214 @@ export default function StudentPortal({
                 disabled={selectedAnswer === null}
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-bold text-sm hover:brightness-110 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>{quizIndex + 1 === assessmentQuestions.length ? 'Submit Final Answer & Generate Credential' : 'Submit Answer & Next Question'}</span>
+                <span>{quizIndex + 1 === assessmentQuestions.length ? 'Submit Final Answer & Generate Job Readiness Grade' : 'Submit Answer & Next Question'}</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           ) : (
-            <div className="text-center py-8 space-y-6">
-              <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-2 border border-emerald-400/40">
-                <Sparkles className="w-10 h-10 text-emerald-400 animate-pulse" />
-              </div>
+            /* COMPLETED TEST: JOB READINESS ASSESSMENT & QUALITY GRADING */
+            <div className="space-y-6 pt-2">
+              {/* Grade Header Card */}
+              <div className="glass-card rounded-2xl p-6 sm:p-8 border border-emerald-500/40 bg-gradient-to-b from-emerald-950/30 to-slate-900/60 relative overflow-hidden text-center">
+                <div className="absolute top-0 right-1/4 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-              <div className="space-y-2">
-                <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold border border-emerald-500/40">
-                  Assessment Completed
-                </span>
-                <h3 className="text-2xl font-bold text-white">AI Skill Diagnostic Completed!</h3>
-                <p className="text-slate-300 text-sm max-w-md mx-auto">
-                  You scored <strong className="text-emerald-400 text-lg">{quizScore} / {assessmentQuestions.length}</strong> ({Math.round((quizScore / assessmentQuestions.length) * 100)}%).
-                </p>
-              </div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold mb-4">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>AI Diagnostic Competency & Job Quality Report</span>
+                </div>
 
-              {/* Earned Credential Preview Card */}
-              <div className="glass-card rounded-2xl p-6 border border-emerald-500/40 bg-emerald-950/20 max-w-md mx-auto text-left space-y-3">
-                <div className="flex items-center gap-3 border-b border-emerald-500/20 pb-3">
-                  <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                  <div>
-                    <h4 className="text-sm font-bold text-white">Official Ayush Skill Credential Awarded</h4>
-                    <span className="text-[10px] text-slate-400">Issued to: <strong className="text-emerald-300">{studentProfile.name}</strong></span>
+                {/* Big Letter Grade Display */}
+                <div className="flex flex-col items-center justify-center my-4">
+                  <div className="relative w-28 h-28 rounded-3xl bg-slate-900/90 border-2 border-emerald-400 flex flex-col items-center justify-center shadow-xl shadow-emerald-950/60">
+                    <span className="text-4xl sm:text-5xl font-black gradient-text-ayush">
+                      {gradeInfo.grade}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-0.5">
+                      Grade
+                    </span>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white mt-3">{gradeInfo.title}</h3>
+                  <p className="text-xs text-slate-300 max-w-xl mx-auto mt-1 leading-relaxed">
+                    {gradeInfo.summary}
+                  </p>
+                </div>
+
+                {/* Score & Evaluation Badges */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto mt-6 text-left">
+                  <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                    <span className="text-[10px] text-slate-400 block mb-0.5">Diagnostic Score</span>
+                    <strong className="text-lg font-bold text-emerald-400 font-mono">
+                      {quizScore} / {assessmentQuestions.length} ({Math.round((quizScore / assessmentQuestions.length) * 100)}%)
+                    </strong>
+                  </div>
+
+                  <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                    <span className="text-[10px] text-slate-400 block mb-0.5">Target Job Role</span>
+                    <strong className="text-xs font-bold text-white line-clamp-1">
+                      {jobPreferences.targetRole}
+                    </strong>
+                  </div>
+
+                  <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                    <span className="text-[10px] text-slate-400 block mb-0.5">Mode Alignment</span>
+                    <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                      {jobPreferences.workMode} Ready
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                    <span className="text-[10px] text-slate-400 block mb-0.5">Target Salary</span>
+                    <strong className="text-xs font-bold text-amber-300 font-mono">
+                      {jobPreferences.expectedSalary}
+                    </strong>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">Assessed Score</span>
-                    <strong className="text-emerald-400 font-mono text-sm">{Math.round((quizScore / assessmentQuestions.length) * 100)}%</strong>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 block">Readiness Rating</span>
-                    <strong className="text-cyan-300 text-xs">{quizScore >= 8 ? 'High (Industry Ready)' : 'Moderate'}</strong>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-[10px] text-slate-400 block">Domains Evaluated</span>
-                    <span className="text-slate-200 text-xs">{studentDomains.join(', ')}</span>
-                  </div>
+                <div className="mt-4 p-3 rounded-xl bg-slate-900/60 border border-slate-800 max-w-2xl mx-auto text-xs text-slate-300 flex items-center justify-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span><strong>Recruiter Outlook:</strong> {gradeInfo.hiringStatus}</span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-4 pt-4">
+              {/* Quality Improvement Section: What the student needs to improve to get hired */}
+              <div className="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
+                <div className="flex items-center gap-2.5 pb-3 border-b border-slate-800">
+                  <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                  <div>
+                    <h4 className="text-base font-bold text-white">
+                      Quality Assessment: Competencies to Improve for Landing Your Target Job
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Evaluation based on your answers and recruiters' quality requirements for {jobPreferences.targetRole}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Missed Questions Breakdown */}
+                {missedQuestions.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-400" />
+                      <span>Identified Skill Gaps from Assessment ({missedQuestions.length} Areas Requiring Improvement):</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {missedQuestions.map((mq, idx) => (
+                        <div key={idx} className="p-4 rounded-xl bg-slate-900/80 border border-amber-500/30 space-y-2 text-xs">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-bold text-white leading-relaxed">
+                              {idx + 1}. {mq.question}
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/20 text-amber-300 shrink-0 border border-amber-500/30">
+                              {mq.category}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-1 border-t border-slate-800">
+                            <div className="p-2 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300">
+                              <span className="text-[10px] text-slate-400 block font-semibold">Your Answer:</span>
+                              <span>{mq.userAnswer}</span>
+                            </div>
+                            <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+                              <span className="text-[10px] text-slate-400 block font-semibold">Industry Correct Standard:</span>
+                              <span>{mq.correctAnswer}</span>
+                            </div>
+                          </div>
+
+                          {mq.explanation && (
+                            <p className="text-[11px] text-slate-300 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800 leading-relaxed">
+                              💡 <strong>Recruiter Quality Requirement:</strong> {mq.explanation}
+                            </p>
+                          )}
+
+                          <div className="text-[11px] text-cyan-400 font-medium flex items-center gap-1 pt-1">
+                            <span>Target Competency Needed:</span>
+                            <strong className="text-white underline">{mq.skillBoost?.skillName || mq.category}</strong>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-3">
+                    <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
+                    <div>
+                      <strong className="block text-sm text-white">Flawless Diagnostic Quality (10/10)!</strong>
+                      <span>Zero critical skill gaps detected. You exceed recruiter baseline requirements for {jobPreferences.targetRole} and are directly eligible for top-tier stipends ({jobPreferences.expectedSalary}).</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4-Pillar Quality Standards for Landing Job */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                        <BookOpen className="w-3.5 h-3.5 text-cyan-400" /> Domain Theory & Standards
+                      </span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${quizScore >= 8 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                        {quizScore >= 8 ? 'Meets Bar' : 'Gap Detected'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Familiarity with standardized regulatory frameworks (Ayush Grid, GCP, Pharmacopoeial markers).
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-slate-900/50 border border-slate-800 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-200 flex items-center gap-1.5">
+                        <Laptop className="w-3.5 h-3.5 text-emerald-400" /> Placement Mode Readiness
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                        {jobPreferences.workMode} Ready
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Ability to execute asynchronous analysis, clinical trial documentation, and remote collaboration.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quality Improvement Roadmap */}
+                <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 text-xs space-y-2">
+                  <h5 className="font-bold text-cyan-400 flex items-center gap-1.5">
+                    <TrendingUp className="w-4 h-4" /> 3-Step Action Plan to Reach 100% Hiring Readiness:
+                  </h5>
+                  <ol className="list-decimal list-inside space-y-1.5 text-slate-300 text-[11px] leading-relaxed">
+                    <li>Review the recommended modules under <strong className="text-white">Skill Gap & Competency Radar</strong>.</li>
+                    <li>Retake the diagnostic to boost your score from <strong className="text-emerald-400">{quizScore}/10</strong> to <strong className="text-cyan-300">10/10 (Grade A+)</strong>.</li>
+                    <li>Apply directly to matching corporate internships in <strong className="text-white">{jobPreferences.domain}</strong> below.</li>
+                  </ol>
+                </div>
+              </div>
+
+              {/* Call-to-action buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setDomainFilter(jobPreferences.domain);
+                    navigateTo('jobs');
+                  }}
+                  className="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-extrabold text-xs sm:text-sm hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer"
+                >
+                  <Briefcase className="w-4 h-4" />
+                  <span>View Matching Internships for {jobPreferences.targetRole} ({filteredJobs.length} Available)</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
                 <button
                   onClick={() => navigateTo('radar')}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold text-xs hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20 cursor-pointer"
+                  className="px-5 py-3 rounded-xl bg-slate-800 text-slate-200 hover:text-white hover:bg-slate-700 font-bold text-xs transition-all border border-slate-700 cursor-pointer flex items-center gap-1.5"
                 >
-                  View Updated Skill Radar
+                  <RadarIcon className="w-4 h-4 text-emerald-400" /> View Competency Radar
                 </button>
-                <button
-                  onClick={() => navigateTo('portfolio')}
-                  className="px-6 py-2.5 rounded-xl bg-slate-900 text-cyan-400 border border-cyan-500/40 hover:bg-slate-800 font-bold text-xs transition-all cursor-pointer"
-                >
-                  View in Digital Skill Passport
-                </button>
+
                 <button
                   onClick={restartQuiz}
-                  className="px-6 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 font-semibold text-xs transition-all cursor-pointer"
+                  className="px-5 py-3 rounded-xl bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 font-semibold text-xs transition-all border border-slate-800 cursor-pointer"
                 >
-                  Retake Diagnostic
+                  Retake Diagnostic Quiz
                 </button>
               </div>
             </div>
@@ -747,112 +1213,412 @@ export default function StudentPortal({
       {/* TAB 3: INTERNSHIPS & OPPORTUNITIES */}
       {activeTab === 'jobs' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <button
               onClick={navigateBack}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Skill Radar
             </button>
-            <span className="text-xs text-slate-400">Verified Corporate Ayush Opportunities</span>
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span>Showing</span>
+              <strong className="text-emerald-400 font-mono text-sm">{filteredJobs.length}</strong>
+              <span>Verified Corporate Opportunities</span>
+            </div>
           </div>
 
-          {/* Filters Bar */}
-          <div className="glass-panel rounded-xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
-            <div className="relative w-full md:w-96">
-              <input
-                type="text"
-                placeholder="Search roles, skills, or companies..."
-                value={jobSearch}
-                onChange={e => setJobSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-900/80 border border-slate-800 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-              />
-              <Filter className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+          {/* Student Career & Internship Preferences Panel */}
+          <div className="glass-panel-glow rounded-2xl p-6 border border-emerald-500/30 relative overflow-hidden space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold shrink-0 border border-emerald-500/40">
+                  <Briefcase className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-bold text-white">Your Internship & Career Preferences</h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      Live Matching
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Internship opportunities below are filtered and ranked according to your selected domain, work mode, and salary expectations.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsEditingPreferences(!isEditingPreferences)}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/40 flex items-center gap-1.5 transition-all self-start md:self-auto cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{isEditingPreferences ? 'Close Editor' : 'Edit Career Preferences'}</span>
+              </button>
             </div>
 
-            <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto">
-              <span className="text-xs text-slate-400 font-semibold uppercase">Domain:</span>
-              {['All', 'Ayush Bio-Tech', 'Digital Health & Tech', 'Bio-Analytics', 'Data Science & Clinical'].map(domain => (
+            {/* Read-only preference summary */}
+            {!isEditingPreferences ? (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+                <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1">Target Job Role</span>
+                  <strong className="text-white text-xs block truncate">{jobPreferences.targetRole}</strong>
+                </div>
+
+                <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1">Internship Domain</span>
+                  <strong className="text-emerald-300 text-xs block truncate">
+                    {MASTER_DOMAINS.find(d => d.id === jobPreferences.domain)?.name.split('&')[0] || jobPreferences.domain}
+                  </strong>
+                </div>
+
+                <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1">Work Mode</span>
+                  <span className={`inline-block px-2.5 py-0.5 rounded font-bold text-[11px] ${
+                    jobPreferences.workMode === 'Remote' ? 'bg-emerald-500/20 text-emerald-300' :
+                    jobPreferences.workMode === 'Hybrid' ? 'bg-cyan-500/20 text-cyan-300' :
+                    'bg-amber-500/20 text-amber-300'
+                  }`}>
+                    {jobPreferences.workMode}
+                  </span>
+                </div>
+
+                <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-400 block mb-1">Expected Salary</span>
+                  <strong className="text-amber-300 text-xs font-mono block truncate">{jobPreferences.expectedSalary}</strong>
+                </div>
+
+                <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 col-span-2 md:col-span-1">
+                  <span className="text-[10px] text-slate-400 block mb-1">Preferred Location</span>
+                  <strong className="text-slate-200 text-xs block truncate">{jobPreferences.preferredLocation || 'Pan-India'}</strong>
+                </div>
+              </div>
+            ) : (
+              /* Inline Preferences Form */
+              <form onSubmit={handleSavePreferences} className="space-y-4 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Target Job Role</label>
+                    <input
+                      type="text"
+                      value={prefForm.targetRole}
+                      onChange={e => setPrefForm(prev => ({ ...prev, targetRole: e.target.value }))}
+                      placeholder="e.g. AI Health Informatics Specialist"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      required
+                    />
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {['AI Health Informatics', 'Phytochemistry R&D', 'Clinical Research', 'Data Analyst', 'Tele-Ayush'].map(sugg => (
+                        <button
+                          type="button"
+                          key={sugg}
+                          onClick={() => setPrefForm(prev => ({ ...prev, targetRole: sugg }))}
+                          className="text-[10px] px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 cursor-pointer"
+                        >
+                          + {sugg}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Internship Domain / Category</label>
+                    <select
+                      value={prefForm.domain}
+                      onChange={e => setPrefForm(prev => ({ ...prev, domain: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
+                    >
+                      {MASTER_DOMAINS.map(d => (
+                        <option key={d.id} value={d.id}>
+                          {d.icon} {d.name} ({d.badge})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Work Mode</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {['Remote', 'Hybrid', 'On-site'].map(mode => (
+                        <button
+                          type="button"
+                          key={mode}
+                          onClick={() => setPrefForm(prev => ({ ...prev, workMode: mode }))}
+                          className={`py-1.5 rounded-lg text-xs font-bold transition-all border cursor-pointer ${
+                            prefForm.workMode === mode 
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-extrabold shadow-sm' 
+                              : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                          }`}
+                        >
+                          {mode}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Expected Salary / Stipend (Written)</label>
+                    <input
+                      type="text"
+                      value={prefForm.expectedSalary}
+                      onChange={e => setPrefForm(prev => ({ ...prev, expectedSalary: e.target.value }))}
+                      placeholder="e.g. ₹45,000 / month"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500"
+                      required
+                    />
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {['₹30,000 / month', '₹45,000 / month', '₹60,000 / month', '₹7.5 - 10 LPA'].map(sal => (
+                        <button
+                          type="button"
+                          key={sal}
+                          onClick={() => setPrefForm(prev => ({ ...prev, expectedSalary: sal }))}
+                          className="text-[10px] px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 cursor-pointer"
+                        >
+                          {sal}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-bold text-slate-300 block mb-1">Preferred Location</label>
+                    <input
+                      type="text"
+                      value={prefForm.preferredLocation}
+                      onChange={e => setPrefForm(prev => ({ ...prev, preferredLocation: e.target.value }))}
+                      placeholder="e.g. Bengaluru / New Delhi (Open to Remote)"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingPreferences(false)}
+                    className="px-4 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold text-xs hover:brightness-110 transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    <Check className="w-3.5 h-3.5" /> Save Preferences & Filter Opportunities
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {prefSavedToast && (
+              <div className="p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-bold flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Preferences updated! Filtered to your selected internship domain.
+              </div>
+            )}
+          </div>
+
+          {/* Search & Domain Filter Bar */}
+          <div className="glass-panel rounded-2xl p-5 space-y-4">
+            <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+              <div className="relative w-full md:w-96">
+                <input
+                  type="text"
+                  placeholder="Search roles, companies, or skills..."
+                  value={jobSearch}
+                  onChange={e => setJobSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                />
+                <Filter className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
+              </div>
+
+              {/* Work Mode Toggle */}
+              <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800 self-stretch md:self-auto justify-center">
+                <span className="text-[11px] text-slate-400 font-semibold px-2">Mode:</span>
+                {['All', 'Remote', 'Hybrid', 'On-site'].map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => setWorkModeFilter(mode)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      workModeFilter === mode
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Domain Filter Pills for All Categories */}
+            <div className="space-y-2 pt-2 border-t border-slate-800/80">
+              <div className="flex items-center justify-between text-xs text-slate-400">
+                <span className="font-semibold flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-emerald-400" /> Filter by Internship Category / Domain:
+                </span>
+                {domainFilter !== 'All' && (
+                  <button
+                    onClick={() => setDomainFilter('All')}
+                    className="text-cyan-400 hover:underline text-[11px] font-medium cursor-pointer"
+                  >
+                    Show All Categories
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
                 <button
-                  key={domain}
-                  onClick={() => setDomainFilter(domain)}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                    domainFilter === domain
-                      ? 'bg-emerald-500 text-slate-950 font-bold'
-                      : 'bg-slate-900/60 text-slate-400 hover:text-slate-200 border border-slate-800'
+                  onClick={() => setDomainFilter('All')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                    domainFilter === 'All'
+                      ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-950'
+                      : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800'
                   }`}
                 >
-                  {domain}
+                  🌐 All Categories ({jobs.length})
                 </button>
-              ))}
+
+                {MASTER_DOMAINS.map(domain => {
+                  const isSelected = domainFilter === domain.id || domainFilter === domain.name;
+                  const isUserTarget = jobPreferences.domain === domain.id;
+                  const count = jobs.filter(j => j.domainId === domain.id || j.domain.toLowerCase().includes(domain.name.toLowerCase().split('&')[0].trim())).length;
+
+                  return (
+                    <button
+                      key={domain.id}
+                      onClick={() => setDomainFilter(domain.id)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 shadow-md shadow-emerald-950'
+                          : 'bg-slate-900/80 text-slate-400 hover:text-slate-200 border border-slate-800'
+                      }`}
+                    >
+                      <span>{domain.icon}</span>
+                      <span>{domain.badge}</span>
+                      {count > 0 && (
+                        <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-slate-950/40 text-emerald-100' : 'bg-slate-800 text-slate-400'}`}>
+                          {count}
+                        </span>
+                      )}
+                      {isUserTarget && (
+                        <span className="text-[10px] text-amber-300 font-extrabold ml-1">★ Preferred</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
           {/* Opportunities Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredJobs.map(job => {
-              const isApplied = applications.includes(job.id);
-              return (
-                <div key={job.id} className="glass-card rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden">
-                  <div className="flex items-start justify-between gap-4">
+          {filteredJobs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredJobs.map(job => {
+                const isApplied = applications.includes(job.id);
+                return (
+                  <div key={job.id} className="glass-card rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 transition-all">
                     <div>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold badge-ayush inline-block mb-2">
-                        {job.domain}
-                      </span>
-                      <h4 className="text-lg font-bold text-white">{job.title}</h4>
-                      <p className="text-emerald-400 font-medium text-xs mt-0.5">{job.company}</p>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2 mb-2">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold badge-ayush inline-block">
+                              {job.domain}
+                            </span>
+                            <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${
+                              job.mode === 'Remote' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' :
+                              job.mode === 'Hybrid' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' :
+                              'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                            }`}>
+                              {job.mode || 'On-site'}
+                            </span>
+                          </div>
+                          <h4 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">{job.title}</h4>
+                          <p className="text-emerald-400 font-medium text-xs mt-0.5 flex items-center gap-1.5">
+                            <Building2 className="w-3.5 h-3.5" />
+                            <span>{job.company}</span>
+                          </p>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <span className="text-[10px] text-slate-400 block uppercase font-mono">AI Match</span>
+                          <span className="text-xl font-black text-emerald-400">{job.matchScore}%</span>
+                        </div>
+                      </div>
+
+                      <p className="text-slate-300 text-xs mt-3 line-clamp-3 leading-relaxed">
+                        {job.description}
+                      </p>
+
+                      {/* Skills Required Tags */}
+                      <div className="flex flex-wrap gap-1.5 mt-4">
+                        {(job.skillsRequired || []).map((skill, idx) => (
+                          <span key={idx} className="px-2 py-0.5 rounded text-[11px] bg-slate-900 text-slate-300 border border-slate-800">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-xs text-slate-400 block">AI Match</span>
-                      <span className="text-lg font-black text-emerald-400">{job.matchScore}%</span>
+                    {/* Details Footer with Written Salary / Stipend */}
+                    <div className="mt-6 pt-4 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                          <span className="text-slate-400 font-medium">Stipend:</span>
+                          <strong className="text-amber-300 font-mono font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                            {job.stipend}
+                          </strong>
+                        </div>
+                        <span className="text-slate-500 block flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-400" /> {job.location} • {job.duration}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => onApplyJob(job.id)}
+                        disabled={isApplied}
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
+                          isApplied
+                            ? 'bg-slate-800 text-emerald-400 border border-emerald-500/30'
+                            : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:brightness-110 shadow-lg shadow-emerald-500/20'
+                        }`}
+                      >
+                        {isApplied ? (
+                          <>
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Applied
+                          </>
+                        ) : (
+                          <>
+                            Apply 1-Click <ChevronRight className="w-4 h-4" />
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
-
-                  <p className="text-slate-300 text-xs mt-3 line-clamp-3 leading-relaxed">
-                    {job.description}
-                  </p>
-
-                  {/* Skills Required Tags */}
-                  <div className="flex flex-wrap gap-1.5 mt-4">
-                    {(job.skillsRequired || []).map((skill, idx) => (
-                      <span key={idx} className="px-2 py-0.5 rounded text-[11px] bg-slate-900 text-slate-300 border border-slate-800">
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Details Footer */}
-                  <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                    <div className="space-y-1">
-                      <span className="text-slate-400 block font-medium">Stipend: <strong className="text-white">{job.stipend}</strong></span>
-                      <span className="text-slate-500 block">Location: {job.location} • {job.duration}</span>
-                    </div>
-
-                    <button
-                      onClick={() => onApplyJob(job.id)}
-                      disabled={isApplied}
-                      className={`px-4 py-2 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer ${
-                        isApplied
-                          ? 'bg-slate-800 text-emerald-400 border border-emerald-500/30'
-                          : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:brightness-110 shadow-lg shadow-emerald-500/20'
-                      }`}
-                    >
-                      {isApplied ? (
-                        <>
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Applied
-                        </>
-                      ) : (
-                        <>
-                          Apply 1-Click <ChevronRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="glass-panel rounded-2xl p-10 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-400 flex items-center justify-center mx-auto">
+                <Briefcase className="w-6 h-6" />
+              </div>
+              <h4 className="text-base font-bold text-white">No Opportunities Found for this Filter</h4>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                There are currently no openings matching "{domainFilter}" with "{workModeFilter}" mode.
+              </p>
+              <button
+                onClick={() => {
+                  setDomainFilter('All');
+                  setWorkModeFilter('All');
+                  setJobSearch('');
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-400 text-xs font-bold transition-all cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+            </div>
+          )}
         </div>
       )}
 
