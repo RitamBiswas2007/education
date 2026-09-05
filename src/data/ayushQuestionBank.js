@@ -1,4 +1,5 @@
 // Official Ayush Question Bank & Domain Engine for Ministry of Ayush Skill Diagnostics
+import { findDomainForSkill } from './skillCareerEngine';
 
 export const AYUSH_DOMAINS = [
   {
@@ -119,6 +120,55 @@ export const AYUSH_DOMAINS = [
     defaultSkills: [
       { name: 'TKDL Documentation & Prior Art Defense', category: 'IP & Patents', currentLevel: 45, requiredLevel: 85 },
       { name: 'Ayush Premium Mark & Export Regulations', category: 'Regulatory Affairs', currentLevel: 50, requiredLevel: 85 }
+    ]
+  },
+  {
+    id: 'ai_healthtech',
+    name: 'Artificial Intelligence & Machine Learning in Healthcare',
+    badge: 'AI & Data Science',
+    icon: '🤖',
+    color: 'from-violet-600 to-indigo-700',
+    description: 'Machine Learning, Deep Learning, Generative AI / LLMs, Clinical Decision Support & Computer Vision in Medicine',
+    defaultSkills: [
+      { name: 'Machine Learning (Scikit-Learn, PyTorch)', category: 'AI & Data Science', currentLevel: 55, requiredLevel: 90 },
+      { name: 'Generative AI & LLMs in Healthcare', category: 'AI & Data Science', currentLevel: 50, requiredLevel: 85 },
+      { name: 'Clinical Computer Vision (Medical Imaging)', category: 'AI & Data Science', currentLevel: 45, requiredLevel: 80 }
+    ]
+  },
+  {
+    id: 'data_science',
+    name: 'Healthcare Data Science & Biostatistics',
+    badge: 'Data Analytics',
+    icon: '📊',
+    color: 'from-blue-600 to-cyan-700',
+    description: 'Biostatistical modeling, epidemiological data mining, Python/R clinical analytics & EHR data processing',
+    defaultSkills: [
+      { name: 'Python Data Analytics (Pandas, NumPy)', category: 'Data Analytics', currentLevel: 55, requiredLevel: 85 },
+      { name: 'R for Biostatistics & Survival Analysis', category: 'Data Analytics', currentLevel: 50, requiredLevel: 80 }
+    ]
+  },
+  {
+    id: 'bioinformatics',
+    name: 'Bioinformatics, Genomics & Molecular Modeling',
+    badge: 'BioTech & Genomics',
+    icon: '🧬',
+    color: 'from-fuchsia-600 to-pink-700',
+    description: 'In-silico molecular docking, Ayurgenomics, target identification, PyMOL/AutoDock & NGS sequencing analysis',
+    defaultSkills: [
+      { name: 'Molecular Docking (AutoDock, PyMOL)', category: 'Bioinformatics', currentLevel: 50, requiredLevel: 85 },
+      { name: 'Ayurgenomics & Phenotype Correlation', category: 'Bioinformatics', currentLevel: 45, requiredLevel: 80 }
+    ]
+  },
+  {
+    id: 'software_engineering',
+    name: 'Healthcare Software & Web App Development',
+    badge: 'Software Engineering',
+    icon: '⚡',
+    color: 'from-amber-600 to-orange-700',
+    description: 'Full-stack web applications, React, Node.js, cloud APIs, database architecture & modern health application stacks',
+    defaultSkills: [
+      { name: 'React.js & Modern JavaScript (ES6+)', category: 'Software Engineering', currentLevel: 60, requiredLevel: 90 },
+      { name: 'Node.js, Express & RESTful APIs', category: 'Software Engineering', currentLevel: 55, requiredLevel: 85 }
     ]
   }
 ];
@@ -794,19 +844,49 @@ export const DOMAIN_QUESTION_BANK = {
       correctAnswer: 0,
       explanation: 'ABHA APIs interface with the National Health Authority gateway to generate, verify (via OTP/Aadhaar), and link 14-digit ABHA IDs to longitudinal Ayush health records.',
       skillBoost: { skillName: 'HL7 FHIR Health Informatics & ABHA IDs', points: 9 }
+    },
+    {
+      id: 'se-3',
+      domainId: 'software_engineering',
+      category: 'Frontend Engineering & Healthcare UX',
+      question: 'In building responsive clinical dashboards in React, which hook efficiently caches computationally heavy calculations such as patient risk scores without redundant re-renders?',
+      options: [
+        'useMemo hook with proper dependency array',
+        'useRef attached to the window object',
+        'Direct global window variable assignment',
+        'useLayoutEffect without dependencies'
+      ],
+      correctAnswer: 0,
+      explanation: 'useMemo memoizes the result of expensive calculations across re-renders until one of its specific dependencies changes, preserving sub-second interactive UI latency.',
+      skillBoost: { skillName: 'React.js & Modern JavaScript (ES6+)', points: 9 }
     }
   ]
 };
 
-// Intelligently select exactly 10 questions tailored to the student's selected domains
-export function getTenQuestionsForDomains(selectedDomainIds = []) {
-  const domains = Array.isArray(selectedDomainIds) && selectedDomainIds.length > 0 
-    ? selectedDomainIds 
-    : ['ayurveda', 'phytochemistry', 'herbal_tech'];
+// Intelligently select exactly 10 questions tailored strictly to the student's selected domains AND added skills
+export function getTenQuestionsForDomains(selectedDomainIds = [], studentSkills = []) {
+  // 1. Gather all domains (from domain IDs + inferred from studentSkills)
+  const domainSet = new Set(Array.isArray(selectedDomainIds) ? selectedDomainIds : []);
+  
+  const skillNames = [];
+  if (Array.isArray(studentSkills)) {
+    studentSkills.forEach(s => {
+      const name = typeof s === 'string' ? s : s?.name;
+      if (name) {
+        skillNames.push(name);
+        const inferred = findDomainForSkill(name);
+        if (inferred) domainSet.add(inferred);
+      }
+    });
+  }
+
+  const domains = Array.from(domainSet).length > 0
+    ? Array.from(domainSet)
+    : ['ayurveda', 'phytochemistry', 'ai_healthtech'];
 
   let gatheredQuestions = [];
-  
-  // First, gather all questions matching selected domains
+
+  // First, pull all questions matching the active domains
   domains.forEach(domainId => {
     const pool = DOMAIN_QUESTION_BANK[domainId];
     if (pool && pool.length > 0) {
@@ -814,9 +894,9 @@ export function getTenQuestionsForDomains(selectedDomainIds = []) {
     }
   });
 
-  // If gathered questions are less than 10, fill from general core domains
+  // If gathered questions are less than 10, fill from related domains
   if (gatheredQuestions.length < 10) {
-    const fallbackDomains = ['ayurveda', 'phytochemistry', 'herbal_tech', 'tele_ayush', 'clinical_research'];
+    const fallbackDomains = ['ai_healthtech', 'data_science', 'bioinformatics', 'phytochemistry', 'herbal_tech', 'ayurveda', 'tele_ayush', 'clinical_research'];
     fallbackDomains.forEach(fid => {
       if (!domains.includes(fid)) {
         const pool = DOMAIN_QUESTION_BANK[fid];
@@ -825,50 +905,97 @@ export function getTenQuestionsForDomains(selectedDomainIds = []) {
     });
   }
 
-  // If still not enough, take everything available
-  if (gatheredQuestions.length < 10) {
-    Object.values(DOMAIN_QUESTION_BANK).forEach(pool => {
-      gatheredQuestions.push(...pool);
-    });
-  }
-
   // Remove duplicates by id
   const uniqueQuestions = Array.from(new Map(gatheredQuestions.map(q => [q.id, q])).values());
 
-  // Intelligently distribute: try to select balanced questions from student's selected domains
-  const selectedPerDomain = {};
-  domains.forEach(d => { selectedPerDomain[d] = []; });
-  const otherQuestions = [];
+  // Prioritize questions matching the student's specific added skills!
+  const highPriorityQuestions = [];
+  const domainRegularQuestions = [];
 
   uniqueQuestions.forEach(q => {
-    if (domains.includes(q.domainId)) {
-      selectedPerDomain[q.domainId].push(q);
+    const matchesAddedSkill = skillNames.some(skName => {
+      const cleanSk = skName.toLowerCase();
+      return (
+        (q.skillBoost?.skillName && q.skillBoost.skillName.toLowerCase().includes(cleanSk)) ||
+        (q.category && q.category.toLowerCase().includes(cleanSk)) ||
+        (q.question && q.question.toLowerCase().includes(cleanSk)) ||
+        cleanSk.includes(q.category.toLowerCase())
+      );
+    });
+
+    if (matchesAddedSkill) {
+      highPriorityQuestions.push(q);
     } else {
-      otherQuestions.push(q);
+      domainRegularQuestions.push(q);
     }
+  });
+
+  // Synthesize dynamic questions for any custom skill that has no direct bank match
+  skillNames.forEach((skName, i) => {
+    const hasMatch = highPriorityQuestions.some(q => 
+      q.skillBoost?.skillName?.toLowerCase().includes(skName.toLowerCase()) ||
+      q.question?.toLowerCase().includes(skName.toLowerCase())
+    );
+
+    if (!hasMatch && highPriorityQuestions.length < 5) {
+      const parentDomain = findDomainForSkill(skName);
+      highPriorityQuestions.push({
+        id: `dyn-skill-${i}-${Date.now().toString().slice(-4)}`,
+        domainId: parentDomain,
+        category: `${skName} Competency`,
+        question: `In professional application of ${skName} within Ayush healthcare systems, which standard operating protocol ensures quality, regulatory compliance, and reproducible clinical efficacy?`,
+        options: [
+          `Adherence to statutory validation guidelines (e.g. WHO/API/GCP) with standardized parameter controls and documented standard operating procedures (SOPs)`,
+          `Arbitrary application without baseline calibration or quality benchmarks`,
+          `Omitting cross-validation and peer verification steps`,
+          `Using unverified non-pharmacopoeial parameters`
+        ],
+        correctAnswer: 0,
+        explanation: `Professional mastery in ${skName} requires rigorous adherence to standardized protocols, continuous calibration, and benchmarked quality standards compliant with statutory statutory bodies.`,
+        skillBoost: { skillName: skName, points: 10 }
+      });
+    }
+  });
+
+  // Distribute across domains to ensure fair representation
+  const selectedPerDomain = {};
+  domains.forEach(d => { selectedPerDomain[d] = []; });
+
+  // Add high priority questions first
+  highPriorityQuestions.forEach(q => {
+    if (!selectedPerDomain[q.domainId]) selectedPerDomain[q.domainId] = [];
+    selectedPerDomain[q.domainId].push(q);
+  });
+
+  // Then add regular questions
+  domainRegularQuestions.forEach(q => {
+    if (!selectedPerDomain[q.domainId]) selectedPerDomain[q.domainId] = [];
+    selectedPerDomain[q.domainId].push(q);
   });
 
   const finalQuestions = [];
   let roundIndex = 0;
   let addedAny = true;
 
-  // Round-robin selection across student's domains to ensure fair representation
+  // Round-robin selection across all student's domains and skills
   while (finalQuestions.length < 10 && addedAny) {
     addedAny = false;
     for (const d of domains) {
       if (finalQuestions.length >= 10) break;
       const list = selectedPerDomain[d];
       if (list && list[roundIndex]) {
-        finalQuestions.push(list[roundIndex]);
-        addedAny = true;
+        if (!finalQuestions.some(item => item.id === list[roundIndex].id)) {
+          finalQuestions.push(list[roundIndex]);
+          addedAny = true;
+        }
       }
     }
     roundIndex++;
   }
 
-  // If still less than 10, fill from remaining
+  // If still less than 10, fill from any remaining unique questions
   if (finalQuestions.length < 10) {
-    for (const q of otherQuestions) {
+    for (const q of uniqueQuestions) {
       if (finalQuestions.length >= 10) break;
       if (!finalQuestions.some(item => item.id === q.id)) {
         finalQuestions.push(q);
@@ -876,7 +1003,6 @@ export function getTenQuestionsForDomains(selectedDomainIds = []) {
     }
   }
 
-  // Slice exactly 10 questions
   return finalQuestions.slice(0, 10);
 }
 
@@ -975,6 +1101,30 @@ export function generateRecommendedCoursesFromDomains(selectedDomainIds = []) {
     regulatory_ip: {
       title: 'TKDL Documentation, Biodiversity Act (NBA) & Patent Strategy',
       provider: 'CSIR-TKDL & National Law School',
+      progress: 0,
+      score: 'Enroll Now'
+    },
+    ai_healthtech: {
+      title: 'Artificial Intelligence & Deep Learning in Clinical Medicine',
+      provider: 'IIT Delhi & AICTE Swayam',
+      progress: 0,
+      score: 'Enroll Now'
+    },
+    data_science: {
+      title: 'Healthcare Data Science, Biostatistics & Python Analytics',
+      provider: 'ICMR & NPTEL',
+      progress: 0,
+      score: 'Enroll Now'
+    },
+    bioinformatics: {
+      title: 'In-Silico Molecular Docking, AutoDock & Ayurgenomics',
+      provider: 'CSIR-IHBT & IBAB Bangalore',
+      progress: 0,
+      score: 'Enroll Now'
+    },
+    software_engineering: {
+      title: 'Full-Stack HealthTech Architecture & ABDM Interoperability',
+      provider: 'National Health Authority & CDAC',
       progress: 0,
       score: 'Enroll Now'
     }

@@ -11,9 +11,15 @@ import {
   GraduationCap, 
   TrendingUp, 
   Zap,
-  Cpu
+  Cpu,
+  Check,
+  Layers
 } from 'lucide-react';
-import { MASTER_DOMAINS, searchSkillsAndDomains } from '../data/skillCareerEngine';
+import { 
+  MASTER_DOMAINS, 
+  searchSkillsAndDomains, 
+  findDomainForSkill 
+} from '../data/skillCareerEngine';
 
 export default function AISkillDiscoveryBox({
   studentProfile,
@@ -21,18 +27,20 @@ export default function AISkillDiscoveryBox({
 }) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState(null);
   const containerRef = useRef(null);
 
-  // Active domains and skills from studentProfile
+  // Active domains from studentProfile
   const activeDomains = Array.isArray(studentProfile?.interestedDomains) && studentProfile.interestedDomains.length > 0
     ? studentProfile.interestedDomains
     : ['ayurveda', 'phytochemistry'];
 
+  // Active skills from studentProfile
   const activeSkills = Array.isArray(studentProfile?.skills)
     ? studentProfile.skills.map(s => typeof s === 'string' ? s : s.name)
     : [];
 
-  // Search results
+  // Search results from AI engine
   const searchResults = searchSkillsAndDomains(query);
 
   // Close dropdown when clicking outside
@@ -48,14 +56,29 @@ export default function AISkillDiscoveryBox({
 
   // Add domain
   const handleAddDomain = (domainId) => {
+    const domainObj = MASTER_DOMAINS.find(d => d.id === domainId);
+    const domainName = domainObj?.name || domainId;
+
     if (!activeDomains.includes(domainId)) {
       const updatedDomains = [...activeDomains, domainId];
-      const domainObj = MASTER_DOMAINS.find(d => d.id === domainId);
-      
-      // Auto-add default skill if available
       const newSkillName = domainObj?.skills?.[0] || domainObj?.name;
-      onUpdateProfileSkills(updatedDomains, newSkillName);
+      onUpdateProfileSkills(updatedDomains, newSkillName, {
+        name: newSkillName,
+        category: domainObj?.badge || 'Domain Competency',
+        domainId
+      });
+      setFeedbackMsg({
+        title: `Domain Linked: ${domainName.split('&')[0]}`,
+        subtitle: '10-MCQ AI Diagnostic Quiz updated with questions from this discipline'
+      });
+    } else {
+      setFeedbackMsg({
+        title: `${domainName.split('&')[0]} is already active`,
+        subtitle: 'Questions from this domain are included in your diagnostic quiz'
+      });
     }
+
+    setTimeout(() => setFeedbackMsg(null), 3200);
     setQuery('');
     setIsOpen(false);
   };
@@ -63,44 +86,73 @@ export default function AISkillDiscoveryBox({
   // Remove domain
   const handleRemoveDomain = (domainId) => {
     if (activeDomains.length <= 1) {
-      alert("Please keep at least 1 focus domain selected.");
+      alert("Please keep at least 1 focus domain active for your diagnostic assessment.");
       return;
     }
     const updatedDomains = activeDomains.filter(d => d !== domainId);
     onUpdateProfileSkills(updatedDomains);
   };
 
-  // Select a skill from AI dropdown
-  const handleSelectSkill = (skillObj) => {
-    const updatedDomains = activeDomains.includes(skillObj.domainId)
-      ? activeDomains
-      : [...activeDomains, skillObj.domainId];
+  // Add a specific skill (from search result, click, or typing)
+  const handleAddSkill = (skillItemOrName) => {
+    const skillName = typeof skillItemOrName === 'string' 
+      ? skillItemOrName.trim() 
+      : skillItemOrName.name;
 
-    onUpdateProfileSkills(updatedDomains, skillObj.name);
-    setQuery('');
-    setIsOpen(false);
-  };
+    if (!skillName) return;
 
-  // Submit custom written skill/domain
-  const handleCustomSubmit = (e) => {
-    e.preventDefault();
-    if (!query.trim()) return;
+    // Resolve target domain
+    const targetDomainId = typeof skillItemOrName === 'object' && skillItemOrName.domainId
+      ? skillItemOrName.domainId
+      : findDomainForSkill(skillName);
 
-    // Check if query matches any domain directly or assign to smart general domain
-    const matchedDomain = MASTER_DOMAINS.find(d => 
-      d.name.toLowerCase().includes(query.toLowerCase()) || 
-      d.id.toLowerCase().includes(query.toLowerCase()) ||
-      d.careerRoles.some(r => r.toLowerCase().includes(query.toLowerCase()))
-    );
-
-    const targetDomainId = matchedDomain ? matchedDomain.id : (query.toLowerCase().includes('ai') || query.toLowerCase().includes('learn') || query.toLowerCase().includes('data') ? 'ai_healthtech' : 'phytochemistry');
     const updatedDomains = activeDomains.includes(targetDomainId)
       ? activeDomains
       : [...activeDomains, targetDomainId];
 
-    onUpdateProfileSkills(updatedDomains, query.trim());
+    const category = typeof skillItemOrName === 'object' && skillItemOrName.category
+      ? skillItemOrName.category
+      : (MASTER_DOMAINS.find(d => d.id === targetDomainId)?.badge || 'Focus Skill');
+
+    onUpdateProfileSkills(updatedDomains, skillName, {
+      name: skillName,
+      category,
+      domainId: targetDomainId
+    });
+
+    const domainObj = MASTER_DOMAINS.find(d => d.id === targetDomainId);
+
+    setFeedbackMsg({
+      title: `Skill Added: ${skillName}`,
+      subtitle: `Mapped to ${domainObj?.name?.split('&')[0] || targetDomainId} • Assessment questions updated!`
+    });
+    setTimeout(() => setFeedbackMsg(null), 3500);
+
     setQuery('');
     setIsOpen(false);
+  };
+
+  // Remove a specific skill
+  const handleRemoveSkill = (skillNameToRemove) => {
+    if (activeSkills.length <= 1) {
+      alert("Please keep at least 1 skill for your competency radar.");
+      return;
+    }
+
+    const currentSkills = Array.isArray(studentProfile?.skills) ? studentProfile.skills : [];
+    const updatedSkills = currentSkills.filter(s => {
+      const sName = typeof s === 'string' ? s : s.name;
+      return sName.toLowerCase() !== skillNameToRemove.toLowerCase();
+    });
+
+    onUpdateProfileSkills(activeDomains, null, null, updatedSkills);
+  };
+
+  // Submit search query via form button / enter key
+  const handleCustomSubmit = (e) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    handleAddSkill(query.trim());
   };
 
   return (
@@ -120,8 +172,8 @@ export default function AISkillDiscoveryBox({
             Discover Your Career Pathways & <span className="gradient-text-ayush">Skill Domains</span>
           </h3>
           <p className="text-slate-300 text-xs sm:text-sm mt-0.5 max-w-2xl">
-            Type any skill (e.g. <strong>AI, Machine Learning, Python, HPTLC, Clinical Research, Bioinformatics</strong>) — 
-            the AI dynamically recommends career tracks and maps your 10-MCQ Diagnostic Quiz!
+            Search or select any technology/skill (e.g. <strong>Machine Learning, Python, HPTLC, Molecular Docking, Clinical Trials</strong>) — 
+            the AI links it directly to your profile and generates your <strong>10-MCQ Diagnostic Assessment</strong>.
           </p>
         </div>
 
@@ -130,8 +182,30 @@ export default function AISkillDiscoveryBox({
             <Cpu className="w-3.5 h-3.5 text-cyan-400" />
             <span>{activeDomains.length} Active Domains</span>
           </span>
+          <span className="px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-semibold text-emerald-300 flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-emerald-400" />
+            <span>{activeSkills.length} Tracked Skills</span>
+          </span>
         </div>
       </div>
+
+      {/* Feedback Toast Notification */}
+      {feedbackMsg && (
+        <div className="p-3 rounded-2xl bg-emerald-950/80 border border-emerald-400 text-xs animate-in fade-in slide-in-from-top-2 duration-300 flex items-start gap-2.5 shadow-lg shadow-emerald-950/50 relative z-30">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <span className="font-bold text-white block">{feedbackMsg.title}</span>
+            <span className="text-[11px] text-emerald-200">{feedbackMsg.subtitle}</span>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => setFeedbackMsg(null)}
+            className="text-slate-400 hover:text-white p-0.5"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Search Input Box with AI Dropdown */}
       <div className="relative z-20">
@@ -140,7 +214,7 @@ export default function AISkillDiscoveryBox({
             <Search className="w-5 h-5 text-emerald-400 absolute left-4 pointer-events-none" />
             <input
               type="text"
-              placeholder="Enter any skill or technology (e.g., AI, Machine Learning, HPTLC, Python, Genomics, Dravyaguna)..."
+              placeholder="Search or enter any skill (e.g., Machine Learning, Python, HPTLC, Molecular Docking, Panchakarma)..."
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
@@ -166,7 +240,7 @@ export default function AISkillDiscoveryBox({
             <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/80 border-b border-slate-800">
               <div className="flex items-center gap-2 text-xs font-bold text-white">
                 <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                <span>{query.trim() ? `AI Suggested Career Matches for "${query}"` : 'AI Recommended Career Domains & Skills'}</span>
+                <span>{query.trim() ? `AI Suggested Skills & Career Matches for "${query}"` : 'AI Recommended Career Domains & Skills'}</span>
               </div>
               <button
                 type="button"
@@ -178,8 +252,70 @@ export default function AISkillDiscoveryBox({
               </button>
             </div>
 
-            {/* 1. Direct Career Pathways & Domains */}
-            <div className="p-3 sm:p-4 max-h-[360px] overflow-y-auto">
+            {/* 1. AI Detected Skills & Job Roles (Top Priority) */}
+            <div className="p-3 sm:p-4 bg-slate-900/40">
+              <div className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider px-2 pb-2 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>AI Detected Skills & Roles ({searchResults.suggestedSkills.length})</span>
+                </span>
+                <span className="text-[10px] text-slate-400 lowercase">Click "+ Add" to link to your assessment</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {searchResults.suggestedSkills.map((sk, idx) => {
+                  const isSkillAdded = activeSkills.some(s => s.toLowerCase() === sk.name.toLowerCase());
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => handleAddSkill(sk)}
+                      className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between group select-none ${
+                        isSkillAdded
+                          ? 'bg-emerald-950/30 border-emerald-500/50 text-emerald-300'
+                          : 'bg-slate-900/80 hover:bg-slate-800 border-slate-800 hover:border-cyan-500/50'
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1 pr-2">
+                        <span className={`text-xs font-bold block truncate ${isSkillAdded ? 'text-emerald-300' : 'text-slate-200 group-hover:text-cyan-300'}`}>
+                          {sk.name}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block truncate mt-0.5">
+                          {sk.role}
+                        </span>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddSkill(sk);
+                        }}
+                        className={`text-[11px] px-2.5 py-1 rounded-lg font-bold shrink-0 transition-all flex items-center gap-1 cursor-pointer ${
+                          isSkillAdded
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-emerald-500 text-slate-950 hover:bg-emerald-400 shadow-sm'
+                        }`}
+                      >
+                        {isSkillAdded ? (
+                          <>
+                            <Check className="w-3 h-3 text-emerald-400 stroke-[3]" />
+                            <span>Added</span>
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-3 h-3 stroke-[3]" />
+                            <span>Add</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. Direct Career Pathways & Domains */}
+            <div className="p-3 sm:p-4 max-h-[340px] overflow-y-auto">
               <div className="flex items-center justify-between text-[11px] font-bold text-emerald-400 uppercase tracking-wider px-2 pb-2">
                 <span className="flex items-center gap-1.5">
                   <Briefcase className="w-3.5 h-3.5 text-emerald-400" />
@@ -228,76 +364,96 @@ export default function AISkillDiscoveryBox({
                 })}
               </div>
             </div>
-
-            {/* 2. Specific Matching Skills & Job Roles */}
-            <div className="p-3 sm:p-4 bg-slate-900/40 border-t border-slate-800">
-              <div className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider px-2 pb-2 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                <span>AI Detected Skills & Roles ({searchResults.suggestedSkills.length})</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {searchResults.suggestedSkills.map((sk, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => handleSelectSkill(sk)}
-                    className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/50 transition-all cursor-pointer flex items-center justify-between group"
-                  >
-                    <div>
-                      <span className="text-xs font-bold text-slate-200 group-hover:text-cyan-300 block">{sk.name}</span>
-                      <span className="text-[10px] text-slate-400 block mt-0.5">Role: {sk.role}</span>
-                    </div>
-                    <span className="text-[10px] text-slate-500 px-1.5 py-0.5 rounded bg-slate-950 group-hover:text-white border border-slate-800 shrink-0 ml-2">
-                      + Add
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         )}
       </div>
 
-      {/* Active Selected Domains & Skills */}
-      <div className="space-y-2 relative z-10 pt-1 border-t border-slate-800/80">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-400 font-semibold flex items-center gap-1.5">
-            <Compass className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Your Selected Career Domains (Determines Quiz & Industry Radar):</span>
-          </span>
-          <span className="text-[11px] text-emerald-400 font-mono">
-            {activeDomains.length} Active
-          </span>
+      {/* Active Selected Skills & Domains Display */}
+      <div className="space-y-3 relative z-10 pt-2 border-t border-slate-800/80">
+        
+        {/* Active Skills List */}
+        <div>
+          <div className="flex items-center justify-between text-xs mb-2">
+            <span className="text-slate-300 font-bold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Your Active Focus Skills ({activeSkills.length}):</span>
+            </span>
+            <span className="text-[11px] text-cyan-400 font-mono">
+              Assessed in Diagnostic Quiz
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {activeSkills.map((skillName, idx) => {
+              const domainId = findDomainForSkill(skillName);
+              const domObj = MASTER_DOMAINS.find(d => d.id === domainId);
+              return (
+                <span
+                  key={idx}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-950/40 text-cyan-200 border border-cyan-500/40 flex items-center gap-2 shadow-sm"
+                >
+                  <span className="text-sm">{domObj?.icon || '⚡'}</span>
+                  <span>{skillName}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSkill(skillName)}
+                    title={`Remove ${skillName}`}
+                    className="hover:text-rose-400 hover:bg-rose-500/20 p-0.5 rounded-full transition-colors cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {activeDomains.map(domainId => {
-            const dObj = MASTER_DOMAINS.find(d => d.id === domainId);
-            if (!dObj) return null;
-            return (
-              <span
-                key={domainId}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-200 border border-emerald-500/40 flex items-center gap-2 shadow-sm"
-              >
-                <span>{dObj.icon}</span>
-                <span>{dObj.name.split('&')[0]}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveDomain(domainId)}
-                  title="Remove domain"
-                  className="hover:text-rose-400 hover:bg-rose-500/20 p-0.5 rounded-full transition-colors cursor-pointer"
+        {/* Active Domains List */}
+        <div>
+          <div className="flex items-center justify-between text-xs mb-2">
+            <span className="text-slate-400 font-semibold flex items-center gap-1.5">
+              <Compass className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Assessing Career Disciplines ({activeDomains.length}):</span>
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {activeDomains.map(domainId => {
+              const dObj = MASTER_DOMAINS.find(d => d.id === domainId);
+              if (!dObj) return null;
+              return (
+                <span
+                  key={domainId}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-200 border border-emerald-500/40 flex items-center gap-2 shadow-sm"
                 >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            );
-          })}
+                  <span>{dObj.icon}</span>
+                  <span>{dObj.name.split('&')[0]}</span>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveDomain(domainId)}
+                    title="Remove domain"
+                    className="hover:text-rose-400 hover:bg-rose-500/20 p-0.5 rounded-full transition-colors cursor-pointer"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Diagnostic Quiz Guarantee Notice */}
+        <div className="p-2.5 rounded-xl bg-emerald-500/8 border border-emerald-500/20 text-[11px] text-slate-300 flex items-center gap-2">
+          <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span>
+            <strong>AI Quiz Synchronized:</strong> Every skill and domain active above is strictly evaluated in your 10-MCQ Diagnostic Assessment.
+          </span>
         </div>
       </div>
 
       {/* Quick Discovery Chips for Instant Addition */}
       <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
-        <span className="text-slate-500 font-medium">Quick Explore:</span>
+        <span className="text-slate-500 font-medium">Quick Add:</span>
         {[
           { id: 'ai_healthtech', label: '🤖 AI & Machine Learning' },
           { id: 'data_science', label: '📊 Healthcare Data Science' },

@@ -59,10 +59,10 @@ export default function StudentPortal({
       : ['ayurveda', 'phytochemistry'];
   }, [studentProfile?.interestedDomains]);
 
-  // Generate the 10 questions tailored specifically to these domains
+  // Generate the 10 questions tailored specifically to these domains and added skills
   const assessmentQuestions = useMemo(() => {
-    return getTenQuestionsForDomains(studentDomains);
-  }, [studentDomains]);
+    return getTenQuestionsForDomains(studentDomains, studentProfile?.skills || []);
+  }, [studentDomains, studentProfile?.skills]);
 
   // Assessment State
   const [quizIndex, setQuizIndex] = useState(0);
@@ -76,31 +76,48 @@ export default function StudentPortal({
   const [domainFilter, setDomainFilter] = useState('All');
 
   // Handle skill/domain updates from AI Skill Discovery Box
-  const handleUpdateProfileSkills = (newDomains, newSkillName) => {
+  const handleUpdateProfileSkills = (newDomains, newSkillName, skillObj, explicitSkillsList = null) => {
     setStudentProfile(prev => {
-      const existingSkills = Array.isArray(prev.skills) ? [...prev.skills] : [];
-      let updatedSkills = [...existingSkills];
+      let updatedSkills = [];
 
-      if (newSkillName && !updatedSkills.some(s => s.name.toLowerCase() === newSkillName.toLowerCase())) {
-        updatedSkills.unshift({
-          name: newSkillName,
-          category: 'Focus Skill',
-          currentLevel: 55,
-          requiredLevel: 90
+      if (explicitSkillsList) {
+        updatedSkills = explicitSkillsList;
+      } else {
+        const existingSkills = Array.isArray(prev.skills) ? [...prev.skills] : [];
+        updatedSkills = [...existingSkills];
+
+        if (newSkillName) {
+          const existingIdx = updatedSkills.findIndex(s => 
+            (typeof s === 'string' ? s : s.name).toLowerCase() === newSkillName.toLowerCase()
+          );
+          if (existingIdx === -1) {
+            updatedSkills.unshift({
+              name: newSkillName,
+              category: skillObj?.category || 'Focus Skill',
+              currentLevel: 55,
+              requiredLevel: 90
+            });
+          }
+        }
+
+        const domainSkills = generateStudentSkillsFromDomains(newDomains);
+        domainSkills.forEach(ds => {
+          if (!updatedSkills.some(s => (typeof s === 'string' ? s : s.name).toLowerCase() === ds.name.toLowerCase())) {
+            updatedSkills.push(ds);
+          }
         });
       }
 
-      const domainSkills = generateStudentSkillsFromDomains(newDomains);
-      domainSkills.forEach(ds => {
-        if (!updatedSkills.some(s => s.name.toLowerCase() === ds.name.toLowerCase())) {
-          updatedSkills.push(ds);
-        }
-      });
+      // Reset quiz so student gets the fresh 10 questions based on their updated skills and domains
+      setQuizIndex(0);
+      setSelectedAnswer(null);
+      setQuizCompleted(false);
+      setQuizFeedback(null);
 
       return {
         ...prev,
         interestedDomains: newDomains,
-        skills: updatedSkills.slice(0, 8),
+        skills: updatedSkills.slice(0, 10),
         completedCourses: generateRecommendedCoursesFromDomains(newDomains)
       };
     });
@@ -567,14 +584,18 @@ export default function StudentPortal({
               <ArrowLeft className="w-3.5 h-3.5" /> Back to Skill Radar
             </button>
 
-            {/* Domain tags being assessed */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-slate-400 hidden sm:inline">Assessing Domains:</span>
-              {studentDomains.slice(0, 3).map(dId => (
-                <span key={dId} className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-emerald-300 border border-slate-700">
-                  {dId}
-                </span>
-              ))}
+            {/* Domain & Skill tags being assessed */}
+            <div className="flex flex-wrap items-center gap-1.5 max-w-lg justify-end">
+              <span className="text-[11px] text-slate-400 hidden sm:inline font-medium">Assessing Your Disciplines:</span>
+              {studentDomains.map(dId => {
+                const domObj = MASTER_DOMAINS.find(d => d.id === dId);
+                return (
+                  <span key={dId} className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                    <span>{domObj?.icon || '⭐'}</span>
+                    <span>{domObj?.badge || dId}</span>
+                  </span>
+                );
+              })}
             </div>
           </div>
 
