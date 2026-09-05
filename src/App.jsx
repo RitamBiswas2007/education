@@ -709,8 +709,8 @@ export default function App() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-base font-black tracking-tight text-white">
-                  AYUSH<span className="gradient-text-ayush">SKILLBRIDGE</span>
+                <h1 className="text-base font-black tracking-tight text-white flex items-center gap-1.5">
+                  AYUSH <span className="gradient-text-ayush">SETU</span>
                 </h1>
                 <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   OFFICIAL PORTAL
@@ -722,7 +722,7 @@ export default function App() {
                 )}
               </div>
               <p className="text-[10px] text-slate-400 font-medium">
-                Ministry of Ayush • National Academia-Industry Ecosystem
+                Unified Academia–Industry Internship & Skill Alignment Portal • Ministry of Ayush
               </p>
             </div>
           </div>

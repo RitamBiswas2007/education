@@ -1,7 +1,7 @@
 /**
- * Centralized Real-Time Reactive Store for Ayush SkillBridge
- * Synchronizes Opportunities and Student Applications across all personas:
- * Students, Academicians (Faculty), Industry Recruiters, and Institution Admins.
+ * Centralized Real-Time Reactive Store for Ayush Setu
+ * Synchronizes opportunities, student applications, and recruiter/faculty reviews
+ * across Students, Academicians (Faculty), Industry Recruiters, and Institution Admins.
  * 
  * Works seamlessly with localStorage event bus for instant multi-tab reactivity,
  * and synchronizes with Supabase database when active.

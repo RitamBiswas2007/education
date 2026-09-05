@@ -36,15 +36,15 @@ export default function DisclaimerModal({ onAccept, onClose, canCloseWithoutAcce
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-black tracking-tight text-white">
-                  AYUSH<span className="gradient-text-ayush">SKILLBRIDGE</span>
+                <h2 className="text-lg font-black tracking-tight text-white flex items-center gap-1.5">
+                  AYUSH <span className="gradient-text-ayush">SETU</span>
                 </h2>
                 <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   LEGAL & PRIVACY NOTICE
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                Ministry of Ayush National Academia-Industry Skill Ecosystem
+                Unified Academia–Industry Internship & Skill Alignment Portal • Ministry of Ayush
               </p>
             </div>
           </div>
@@ -79,7 +79,7 @@ export default function DisclaimerModal({ onAccept, onClose, canCloseWithoutAcce
               <span>1. Official Platform Disclaimer</span>
             </div>
             <p className="text-slate-300 leading-relaxed text-[11px]">
-              Ayush SkillBridge operates under the standardized digital skill benchmarking guidelines of the Ministry of Ayush, Government of India. This portal is designed exclusively to bridge academia, clinical research institutions, and certified industrial manufacturers (Ayurveda, Yoga & Naturopathy, Unani, Siddha, and Homoeopathy).
+              Ayush Setu operates under the standardized digital skill benchmarking guidelines of the Ministry of Ayush, Government of India. This portal is designed exclusively to bridge academia, clinical research institutions, and certified industrial manufacturers (Ayurveda, Yoga & Naturopathy, Unani, Siddha, and Homoeopathy).
             </p>
             <ul className="space-y-1.5 text-[11px] text-slate-400 list-disc list-inside">
               <li>Skill scores, diagnostic quizzes, and competency passports serve as educational benchmarks and industry recommendations.</li>

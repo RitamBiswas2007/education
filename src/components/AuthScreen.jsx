@@ -251,10 +251,10 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
           </div>
           <div>
             <span className="text-base font-black text-white tracking-tight">
-              AYUSH<span className="gradient-text-ayush">SKILLBRIDGE</span>
+              AYUSH <span className="gradient-text-ayush">SETU</span>
             </span>
             <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Ministry of Ayush • Official Portal
+              Unified Academia–Industry Internship & Skill Alignment Portal
             </span>
           </div>
         </div>
@@ -320,7 +320,7 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
               <Sparkles className="w-5 h-5 text-slate-950" />
             </div>
             <span className="text-lg font-black text-white tracking-tight">
-              AYUSH<span className="gradient-text-ayush">SKILLBRIDGE</span>
+              AYUSH <span className="gradient-text-ayush">SETU</span>
             </span>
           </div>
 
@@ -333,8 +333,8 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
               </h2>
               <p className="text-xs text-slate-400">
                 {isSignUp 
-                  ? 'Join the national Ayush skill ecosystem' 
-                  : 'Sign in to your Ayush SkillBridge workspace'}
+                  ? 'Join the national Ayush skill & internship ecosystem' 
+                  : 'Sign in to your Ayush Setu workspace'}
               </p>
             </div>
 
