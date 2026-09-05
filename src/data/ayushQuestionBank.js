@@ -996,11 +996,11 @@ export function generateRecommendedCoursesFromDomains(selectedDomainIds = []) {
 export function createFreshStudentProfile(user = {}) {
   const domains = Array.isArray(user.interestedDomains) && user.interestedDomains.length > 0 
     ? user.interestedDomains 
-    : ['ayurveda', 'phytochemistry'];
+    : (user.domains || []);
 
   const studentName = user.name || user.full_name || (user.email ? user.email.split('@')[0] : 'Ayush Scholar');
-  const college = user.college || user.institution || 'Ayush Medical College & Research Institute';
-  const degree = user.degree || 'B.A.M.S. (Bachelor of Ayurvedic Medicine & Surgery)';
+  const college = user.college || user.institution || '';
+  const degree = user.degree || '';
 
   return {
     id: user.id || `STD-${Date.now().toString().slice(-6)}`,
@@ -1011,16 +1011,20 @@ export function createFreshStudentProfile(user = {}) {
     institution: college,
     college: college,
     degree: degree,
-    year: user.year || '3rd Year',
-    qualifications: user.qualifications || 'Higher Secondary (10+2 PCB) / B.A.M.S.',
+    year: user.year || 'Undergraduate Scholar',
+    qualifications: user.qualifications || degree || '',
     whatDone: user.whatDone || '',
     interestedDomains: domains,
+    academicVerified: Boolean(user.academicVerified),
+    verificationDetails: user.verificationDetails || null,
     avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || studentName}`,
-    bio: user.bio || `Student scholar specializing in ${domains.join(', ')}. Passionate about traditional Ayush principles and scientific validation.`,
-    skillScore: 0, // Starts fresh at 0 until AI diagnostic quiz is completed!
-    readinessIndex: 'Diagnostic Pending (Take AI Quiz)',
+    bio: user.bio || (domains.length > 0 
+      ? `Scholar specializing in ${domains.join(', ')}. Actively mapping skills to industry and clinical pathways.`
+      : 'Scholar exploring interdisciplinary Ayush, AI and Healthcare pathways.'),
+    skillScore: user.skillScore || 0, // Starts fresh at 0 until AI diagnostic quiz is completed!
+    readinessIndex: user.readinessIndex || 'Diagnostic Pending (Take AI Quiz)',
     skills: generateStudentSkillsFromDomains(domains),
-    verifiedCertifications: [], // Starts clean, earned via AI Diagnostic assessment!
+    verifiedCertifications: user.verifiedCertifications || [], // Starts clean, earned via AI Diagnostic assessment!
     completedCourses: generateRecommendedCoursesFromDomains(domains)
   };
 }

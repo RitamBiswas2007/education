@@ -240,21 +240,37 @@ export default function StudentPortal({
                   </span>
                 )}
               </div>
-              <p className="text-slate-300 text-sm mt-0.5">
-                <strong>{studentProfile.degree}</strong> • {studentProfile.institution || studentProfile.college}
-              </p>
+              <div className="flex flex-wrap items-center gap-2 text-slate-300 text-sm mt-0.5">
+                {studentProfile.degree ? (
+                  <strong className="text-white font-semibold">{studentProfile.degree}</strong>
+                ) : (
+                  <span className="text-amber-400 font-medium">Degree: Pending Selection</span>
+                )}
+                <span className="text-slate-500">•</span>
+                {studentProfile.college || studentProfile.institution ? (
+                  <span className="text-slate-200">{studentProfile.college || studentProfile.institution}</span>
+                ) : (
+                  <span className="text-amber-400 font-medium">College: Pending Verification</span>
+                )}
+                {studentProfile.academicVerified && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    <span>AI Verified</span>
+                  </span>
+                )}
+              </div>
               <p className="text-slate-400 text-xs mt-1.5 max-w-xl line-clamp-2">
-                {studentProfile.bio || 'Student scholar specializing in Ayush traditional medicine and evidence-based clinical science.'}
+                {studentProfile.bio || 'Student scholar specializing in evidence-based scientific research and clinical excellence.'}
               </p>
 
               {/* Student Domains Pills */}
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {studentDomains.map(dId => {
-                  const dObj = AYUSH_DOMAINS.find(item => item.id === dId);
+                  const dObj = MASTER_DOMAINS.find(item => item.id === dId) || AYUSH_DOMAINS.find(item => item.id === dId);
                   return (
                     <span key={dId} className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
                       <span>{dObj?.icon || '🌿'}</span>
-                      <span>{dObj?.name.split('&')[0] || dId}</span>
+                      <span>{dObj?.name ? dObj.name.split('&')[0].trim() : dId}</span>
                     </span>
                   );
                 })}
