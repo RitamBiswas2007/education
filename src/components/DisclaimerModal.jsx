@@ -27,7 +27,7 @@ export default function DisclaimerModal({ onAccept, onClose, canCloseWithoutAcce
       <div className="absolute top-1/4 left-1/4 w-[450px] h-[450px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-[450px] h-[450px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-      <div className="relative z-10 w-full max-w-2xl glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6 my-8">
+      <div className="relative z-10 w-full max-w-2xl glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6 my-auto max-h-[92vh] overflow-y-auto custom-scrollbar">
         {/* Header Branding */}
         <div className="flex items-start justify-between gap-4 border-b border-slate-800/80 pb-4">
           <div className="flex items-center gap-3">

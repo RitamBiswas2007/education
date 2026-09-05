@@ -112,7 +112,7 @@ export default function RoleSelectionModal({
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
-      <div className="relative z-10 w-full max-w-4xl glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6 my-8">
+      <div className="relative z-10 w-full max-w-4xl glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6 my-auto max-h-[92vh] overflow-y-auto custom-scrollbar">
         {/* Top bar with back button if onClose provided */}
         {onClose && (
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
