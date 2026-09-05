@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { 
+  ArrowLeft,
   Award, 
   BookOpen, 
   Calendar, 
@@ -17,7 +18,16 @@ import {
 import { INITIAL_FACULTY_PROGRAMS, INITIAL_RESEARCH_CHALLENGES } from '../data/mockData';
 
 export default function AcademicianPortal({ currentUser }) {
-  const [activeTab, setActiveTab] = useState('fdp'); // 'fdp', 'research', 'guest'
+  const [tabHistory, setTabHistory] = useState(['fdp']); // navigation history stack
+  const activeTab = tabHistory[tabHistory.length - 1];
+
+  const navigateTo = (tab) => {
+    setTabHistory(prev => [...prev, tab]);
+  };
+
+  const navigateBack = () => {
+    setTabHistory(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
+  };
 
   const [appliedFdp, setAppliedFdp] = useState([]);
   const [submittedProposals, setSubmittedProposals] = useState([]);
@@ -85,8 +95,19 @@ export default function AcademicianPortal({ currentUser }) {
 
         {/* Sub Navigation */}
         <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-slate-800/80">
+          {/* Back Button — shown when not on default tab */}
+          {tabHistory.length > 1 && (
+            <button
+              onClick={navigateBack}
+              className="px-3 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-1.5 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 shadow-sm group"
+              title="Go back to previous section"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              Back
+            </button>
+          )}
           <button
-            onClick={() => setActiveTab('fdp')}
+            onClick={() => navigateTo('fdp')}
             className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
               activeTab === 'fdp' 
                 ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold shadow-lg' 
@@ -96,7 +117,7 @@ export default function AcademicianPortal({ currentUser }) {
             <BookOpen className="w-4 h-4" /> Faculty Development & Industry Sabbaticals
           </button>
           <button
-            onClick={() => setActiveTab('research')}
+            onClick={() => navigateTo('research')}
             className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
               activeTab === 'research' 
                 ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold shadow-lg' 
@@ -106,7 +127,7 @@ export default function AcademicianPortal({ currentUser }) {
             <FlaskConical className="w-4 h-4" /> Industry Research & Consultancy Grants
           </button>
           <button
-            onClick={() => setActiveTab('guest')}
+            onClick={() => navigateTo('guest')}
             className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
               activeTab === 'guest' 
                 ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold shadow-lg' 
@@ -177,6 +198,16 @@ export default function AcademicianPortal({ currentUser }) {
       {/* TAB 2: RESEARCH & CONSULTANCY MARKETPLACE */}
       {activeTab === 'research' && (
         <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={navigateBack}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Sabbaticals
+            </button>
+            <span className="text-xs text-slate-400">Industry Sponsored Research & Grant Calls</span>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {INITIAL_RESEARCH_CHALLENGES.map(res => {
               const isSubmitted = submittedProposals.includes(res.id);
@@ -218,10 +249,28 @@ export default function AcademicianPortal({ currentUser }) {
 
           {/* Proposal Submission Modal */}
           {selectedChallenge && (
-            <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="glass-panel rounded-2xl p-6 max-w-lg w-full space-y-4 border border-amber-500/30">
+            <div className="fixed inset-0 z-50 bg-[#060a12]/90 backdrop-blur-md flex items-center justify-center p-4">
+              <div className="glass-panel rounded-2xl p-6 max-w-lg w-full space-y-4 border border-slate-800 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedChallenge(null)}
+                      className="px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold border border-slate-800 transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" /> Back
+                    </button>
+                    <h3 className="text-sm font-bold text-white">Consultancy Proposal</h3>
+                  </div>
+                  <button 
+                    onClick={() => setSelectedChallenge(null)}
+                    className="text-slate-400 hover:text-white text-xs font-bold p-1 rounded-lg hover:bg-slate-800"
+                  >
+                    ✕
+                  </button>
+                </div>
                 <h3 className="text-lg font-bold text-white">
-                  Submit Proposal: {selectedChallenge.title}
+                  {selectedChallenge.title}
                 </h3>
                 <p className="text-xs text-amber-400 font-semibold">Grant Value: {selectedChallenge.grantAmount}</p>
 
@@ -268,7 +317,18 @@ export default function AcademicianPortal({ currentUser }) {
 
       {/* TAB 3: GUEST SPEAKER & MENTORSHIP DESK */}
       {activeTab === 'guest' && (
-        <div className="glass-panel rounded-2xl p-6">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={navigateBack}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Sabbaticals
+            </button>
+            <span className="text-xs text-slate-400">Campus Guest Lecture Network</span>
+          </div>
+
+          <div className="glass-panel rounded-2xl p-6">
           <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
             <Users className="w-5 h-5 text-amber-400" /> Book Industry Experts for Campus Guest Lectures
           </h3>
@@ -292,6 +352,7 @@ export default function AcademicianPortal({ currentUser }) {
               </div>
             ))}
           </div>
+        </div>
         </div>
       )}
     </div>

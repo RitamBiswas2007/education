@@ -9,7 +9,8 @@ import {
   Building2, 
   GraduationCap, 
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  ArrowLeft
 } from 'lucide-react';
 
 export default function DisclaimerModal({ onAccept, onClose, canCloseWithoutAccept = false }) {
@@ -49,12 +50,23 @@ export default function DisclaimerModal({ onAccept, onClose, canCloseWithoutAcce
           </div>
 
           {canCloseWithoutAccept && (
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-white text-xs font-semibold p-1 rounded-lg hover:bg-slate-800 transition-all"
-            >
-              ✕ Close
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={onClose}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold border border-slate-800 transition-all flex items-center gap-1.5 cursor-pointer"
+                title="Go back to workspace"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back</span>
+              </button>
+              <button
+                onClick={onClose}
+                className="text-slate-400 hover:text-white text-xs font-semibold p-1.5 rounded-lg hover:bg-slate-800 transition-all cursor-pointer"
+                title="Close"
+              >
+                ✕
+              </button>
+            </div>
           )}
         </div>
 
@@ -120,20 +132,33 @@ export default function DisclaimerModal({ onAccept, onClose, canCloseWithoutAcce
         </div>
 
         {/* Action Button */}
-        <div className="flex items-center justify-between gap-4 pt-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
           <span className="text-[11px] text-slate-500 flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
             DPDP Act 2023 & ABDM FHIR Standards Aligned
           </span>
 
-          <button
-            onClick={handleAccept}
-            disabled={!agreed}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-bold text-xs hover:brightness-110 disabled:opacity-40 disabled:hover:brightness-100 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer"
-          >
-            <span>Accept & Proceed</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            {canCloseWithoutAccept && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleAccept}
+              disabled={!agreed}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-bold text-xs hover:brightness-110 disabled:opacity-40 disabled:hover:brightness-100 transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer"
+            >
+              <span>Accept & Proceed</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

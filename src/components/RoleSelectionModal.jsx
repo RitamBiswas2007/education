@@ -8,8 +8,9 @@ import {
   Sparkles, 
   Users, 
   BarChart3, 
-  BookOpen,
+  BookOpen, 
   ArrowRight,
+  ArrowLeft,
   School
 } from 'lucide-react';
 
@@ -88,7 +89,8 @@ export default function RoleSelectionModal({
   currentUserName, 
   userEmail, 
   initialRole = 'student',
-  onConfirmRole 
+  onConfirmRole,
+  onClose
 }) {
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [institution, setInstitution] = useState('');
@@ -111,6 +113,25 @@ export default function RoleSelectionModal({
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="relative z-10 w-full max-w-4xl glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl space-y-6 my-8">
+        {/* Top bar with back button if onClose provided */}
+        {onClose && (
+          <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+            <button
+              onClick={onClose}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bold border border-slate-800 transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="text-slate-400 hover:text-white text-xs font-semibold p-1.5 rounded-lg hover:bg-slate-800 transition-all cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Header Branding */}
         <div className="text-center space-y-2 max-w-2xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold mb-1">
@@ -221,20 +242,33 @@ export default function RoleSelectionModal({
             <span className="block text-[11px] text-slate-500">Your portal will remember this choice automatically.</span>
           </div>
 
-          <button
-            onClick={handleConfirm}
-            disabled={isSubmitting}
-            className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-bold text-xs hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
-          >
-            {isSubmitting ? (
-              <span>Configuring Workspace...</span>
-            ) : (
-              <>
-                <span>Access {selectedRoleObj.badge}</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back</span>
+              </button>
             )}
-          </button>
+
+            <button
+              onClick={handleConfirm}
+              disabled={isSubmitting}
+              className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-bold text-xs hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isSubmitting ? (
+                <span>Configuring Workspace...</span>
+              ) : (
+                <>
+                  <span>Access {selectedRoleObj.badge}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

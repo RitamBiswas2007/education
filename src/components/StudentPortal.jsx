@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { 
+  ArrowLeft,
   Award, 
   BookOpen, 
   Briefcase, 
@@ -30,7 +31,16 @@ export default function StudentPortal({
   onApplyJob, 
   applications 
 }) {
-  const [activeTab, setActiveTab] = useState('radar'); // 'radar', 'assessment', 'jobs', 'portfolio'
+  const [tabHistory, setTabHistory] = useState(['radar']); // navigation history stack
+  const activeTab = tabHistory[tabHistory.length - 1];
+
+  const navigateTo = (tab) => {
+    setTabHistory(prev => [...prev, tab]);
+  };
+
+  const navigateBack = () => {
+    setTabHistory(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
+  };
   
   // Assessment State
   const [quizIndex, setQuizIndex] = useState(0);
@@ -141,8 +151,19 @@ export default function StudentPortal({
 
         {/* Sub-Navigation Tabs */}
         <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-slate-800/80">
+          {/* Back Button — shown when not on default tab */}
+          {tabHistory.length > 1 && (
+            <button
+              onClick={navigateBack}
+              className="px-3 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-1.5 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 shadow-sm group"
+              title="Go back to previous section"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              Back
+            </button>
+          )}
           <button
-            onClick={() => setActiveTab('radar')}
+            onClick={() => navigateTo('radar')}
             className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
               activeTab === 'radar' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20' 
@@ -152,7 +173,7 @@ export default function StudentPortal({
             <RadarIcon className="w-4 h-4" /> Skill Gap & Competency Radar
           </button>
           <button
-            onClick={() => setActiveTab('assessment')}
+            onClick={() => navigateTo('assessment')}
             className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
               activeTab === 'assessment' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20' 
@@ -162,7 +183,7 @@ export default function StudentPortal({
             <Sparkles className="w-4 h-4 text-amber-400" /> AI Skill Diagnostic Quiz
           </button>
           <button
-            onClick={() => setActiveTab('jobs')}
+            onClick={() => navigateTo('jobs')}
             className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
               activeTab === 'jobs' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20' 
@@ -172,7 +193,7 @@ export default function StudentPortal({
             <Briefcase className="w-4 h-4" /> Internship Opportunities ({filteredJobs.length})
           </button>
           <button
-            onClick={() => setActiveTab('portfolio')}
+            onClick={() => navigateTo('portfolio')}
             className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${
               activeTab === 'portfolio' 
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20' 
@@ -200,7 +221,7 @@ export default function StudentPortal({
                   </p>
                 </div>
                 <button 
-                  onClick={() => setActiveTab('assessment')}
+                  onClick={() => navigateTo('assessment')}
                   className="px-3.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30 transition-all flex items-center gap-1.5"
                 >
                   <Zap className="w-3.5 h-3.5" /> Take Skill Diagnostic
@@ -326,7 +347,7 @@ export default function StudentPortal({
               <h4 className="font-bold text-white text-md">Verified Ayush Skill Badge</h4>
               <p className="text-slate-400 text-xs mt-1">Ready for Export & LinkedIn Sharing</p>
               <button 
-                onClick={() => setActiveTab('portfolio')}
+                onClick={() => navigateTo('portfolio')}
                 className="mt-4 w-full py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold text-xs hover:brightness-110 transition-all flex items-center justify-center gap-1.5"
               >
                 <Share2 className="w-4 h-4" /> View Verified Passport
@@ -339,6 +360,15 @@ export default function StudentPortal({
       {/* TAB 2: AI SKILL DIAGNOSTIC QUIZ */}
       {activeTab === 'assessment' && (
         <div className="glass-panel rounded-2xl p-8 max-w-3xl mx-auto">
+          <div className="mb-4">
+            <button
+              onClick={navigateBack}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Skill Radar
+            </button>
+          </div>
+
           {!quizCompleted ? (
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
@@ -404,7 +434,7 @@ export default function StudentPortal({
 
               <div className="mt-8 flex flex-wrap justify-center gap-4">
                 <button
-                  onClick={() => setActiveTab('radar')}
+                  onClick={() => navigateTo('radar')}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-sm hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20"
                 >
                   View Updated Skill Radar
@@ -424,6 +454,16 @@ export default function StudentPortal({
       {/* TAB 3: INTERNSHIPS & OPPORTUNITIES */}
       {activeTab === 'jobs' && (
         <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={navigateBack}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Skill Radar
+            </button>
+            <span className="text-xs text-slate-400">Verified Corporate Ayush Opportunities</span>
+          </div>
+
           {/* Filters Bar */}
           <div className="glass-panel rounded-xl p-4 flex flex-col md:flex-row gap-4 justify-between items-center">
             <div className="relative w-full md:w-96">
@@ -525,7 +565,18 @@ export default function StudentPortal({
 
       {/* TAB 4: VERIFIED DIGITAL PORTFOLIO */}
       {activeTab === 'portfolio' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={navigateBack}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Skill Radar
+            </button>
+            <span className="text-xs text-slate-400">Verifiable Credentials & Industry Badges</span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left 2 Cols: Ayush Skill Passport */}
           <div className="lg:col-span-2 space-y-6">
             <div className="glass-panel-glow rounded-2xl p-8 relative overflow-hidden">
@@ -602,6 +653,7 @@ export default function StudentPortal({
               </button>
             </div>
           </div>
+        </div>
         </div>
       )}
     </div>

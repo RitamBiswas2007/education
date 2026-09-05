@@ -647,6 +647,7 @@ export default function App() {
           userEmail={currentUser?.email}
           initialRole={activeRole}
           onConfirmRole={handleConfirmRole}
+          onClose={currentUser?.role ? () => setShowRoleSelection(false) : undefined}
         />
       )}
     </div>

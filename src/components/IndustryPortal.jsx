@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  ArrowLeft,
   Building2,
   CheckCircle2,
   ChevronRight,
@@ -22,7 +23,16 @@ export default function IndustryPortal({
   onUpdateCandidateStatus,
   currentUser
 }) {
-  const [activeSubTab, setActiveSubTab] = useState('candidates'); // 'candidates', 'post-job', 'my-listings'
+  const [tabHistory, setTabHistory] = useState(['candidates']); // navigation history stack
+  const activeSubTab = tabHistory[tabHistory.length - 1];
+
+  const navigateTo = (tab) => {
+    setTabHistory(prev => [...prev, tab]);
+  };
+
+  const navigateBack = () => {
+    setTabHistory(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
+  };
 
   // Post Job Form State
   const [jobTitle, setJobTitle] = useState('');
@@ -60,7 +70,7 @@ export default function IndustryPortal({
     setFormSubmitted(true);
     setTimeout(() => {
       setFormSubmitted(false);
-      setActiveSubTab('my-listings');
+      navigateTo('my-listings');
       setJobTitle('');
       setDescription('');
     }, 1500);
@@ -88,7 +98,7 @@ export default function IndustryPortal({
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => setActiveSubTab('post-job')}
+              onClick={() => navigateTo('post-job')}
               className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold text-xs hover:brightness-110 transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20"
             >
               <PlusCircle className="w-4 h-4" /> Post New Ayush Internship
@@ -98,8 +108,19 @@ export default function IndustryPortal({
 
         {/* Sub Navigation */}
         <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-slate-800/80">
+          {/* Back Button — shown when not on default tab */}
+          {tabHistory.length > 1 && (
+            <button
+              onClick={navigateBack}
+              className="px-3 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-1.5 text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-700 border border-slate-700 hover:border-slate-500 shadow-sm group"
+              title="Go back to previous section"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              Back
+            </button>
+          )}
           <button
-            onClick={() => setActiveSubTab('candidates')}
+            onClick={() => navigateTo('candidates')}
             className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${activeSubTab === 'candidates'
                 ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-lg'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -108,7 +129,7 @@ export default function IndustryPortal({
             <Users className="w-4 h-4" /> Candidate AI Matcher & Applications
           </button>
           <button
-            onClick={() => setActiveSubTab('my-listings')}
+            onClick={() => navigateTo('my-listings')}
             className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${activeSubTab === 'my-listings'
                 ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-lg'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -117,7 +138,7 @@ export default function IndustryPortal({
             <Layers className="w-4 h-4" /> Active Posted Opportunities ({jobs.length})
           </button>
           <button
-            onClick={() => setActiveSubTab('post-job')}
+            onClick={() => navigateTo('post-job')}
             className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 ${activeSubTab === 'post-job'
                 ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-lg'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -216,44 +237,65 @@ export default function IndustryPortal({
 
       {/* SUBTAB 2: MY LISTINGS */}
       {activeSubTab === 'my-listings' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {jobs.map(job => (
-            <div key={job.id} className="glass-panel rounded-2xl p-6 space-y-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold badge-ayush inline-block mb-2">
-                    {job.domain}
-                  </span>
-                  <h4 className="text-lg font-bold text-white">{job.title}</h4>
-                  <p className="text-slate-400 text-xs mt-0.5">{job.company} • {job.location}</p>
-                </div>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">
-                  {job.status}
-                </span>
-              </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={navigateBack}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Candidate Pool
+            </button>
+            <span className="text-xs text-slate-400">Manage Published Recruitment Opportunities</span>
+          </div>
 
-              <div className="flex items-center gap-4 text-xs text-slate-300 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
-                <div>
-                  <span className="text-slate-500 block text-[10px]">Stipend</span>
-                  <span className="font-semibold">{job.stipend}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {jobs.map(job => (
+              <div key={job.id} className="glass-panel rounded-2xl p-6 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold badge-ayush inline-block mb-2">
+                      {job.domain}
+                    </span>
+                    <h4 className="text-lg font-bold text-white">{job.title}</h4>
+                    <p className="text-slate-400 text-xs mt-0.5">{job.company} • {job.location}</p>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold">
+                    {job.status}
+                  </span>
                 </div>
-                <div className="border-l border-slate-800 pl-4">
-                  <span className="text-slate-500 block text-[10px]">Applicants</span>
-                  <span className="font-semibold text-cyan-400">{job.applicantsCount} Candidates</span>
-                </div>
-                <div className="border-l border-slate-800 pl-4">
-                  <span className="text-slate-500 block text-[10px]">Deadline</span>
-                  <span className="font-semibold text-slate-300">{job.deadline}</span>
+
+                <div className="flex items-center gap-4 text-xs text-slate-300 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                  <div>
+                    <span className="text-slate-500 block text-[10px]">Stipend</span>
+                    <span className="font-semibold">{job.stipend}</span>
+                  </div>
+                  <div className="border-l border-slate-800 pl-4">
+                    <span className="text-slate-500 block text-[10px]">Applicants</span>
+                    <span className="font-semibold text-cyan-400">{job.applicantsCount} Candidates</span>
+                  </div>
+                  <div className="border-l border-slate-800 pl-4">
+                    <span className="text-slate-500 block text-[10px]">Deadline</span>
+                    <span className="font-semibold text-slate-300">{job.deadline}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       {/* SUBTAB 3: POST JOB WIZARD */}
       {activeSubTab === 'post-job' && (
-        <div className="glass-panel rounded-2xl p-8 max-w-2xl mx-auto">
+        <div className="glass-panel rounded-2xl p-8 max-w-2xl mx-auto space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <button
+              onClick={navigateBack}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" /> Back to Candidate Pool
+            </button>
+            <span className="text-xs text-slate-400">Post Ayush Internship</span>
+          </div>
           <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
             <PlusCircle className="w-5 h-5 text-emerald-400" /> Post New Ayush Internship / Job Opportunity
           </h3>
@@ -330,12 +372,22 @@ export default function IndustryPortal({
                 ></textarea>
               </div>
 
-              <button
-                type="submit"
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold text-sm hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20"
-              >
-                Publish Job & Match AI Candidates
-              </button>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={navigateBack}
+                  className="px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back
+                </button>
+
+                <button
+                  type="submit"
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold text-sm hover:brightness-110 transition-all shadow-lg shadow-emerald-500/20 cursor-pointer"
+                >
+                  Publish Job & Match AI Candidates
+                </button>
+              </div>
             </form>
           )}
         </div>

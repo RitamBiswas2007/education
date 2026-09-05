@@ -12,7 +12,8 @@ import {
   Sparkles, 
   User, 
   UserPlus, 
-  Users 
+  Users,
+  ArrowLeft 
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
@@ -290,6 +291,17 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
         </div>
 
         {/* Auth Mode Toggle Tabs */}
+        {isSignUp && (
+          <button
+            type="button"
+            onClick={() => { setIsSignUp(false); setErrorMsg(''); setSuccessMsg(''); }}
+            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors cursor-pointer group"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> 
+            <span>Back to Sign In</span>
+          </button>
+        )}
+
         <div className="grid grid-cols-2 gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800 text-xs font-bold">
           <button
             type="button"
