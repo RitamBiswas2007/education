@@ -30,10 +30,10 @@ export default function AISkillDiscoveryBox({
   const [feedbackMsg, setFeedbackMsg] = useState(null);
   const containerRef = useRef(null);
 
-  // Active domains from studentProfile
-  const activeDomains = Array.isArray(studentProfile?.interestedDomains) && studentProfile.interestedDomains.length > 0
+  // Active domains from studentProfile (NO defaults - user must select)
+  const activeDomains = Array.isArray(studentProfile?.interestedDomains)
     ? studentProfile.interestedDomains
-    : ['ayurveda', 'phytochemistry'];
+    : [];
 
   // Active skills from studentProfile
   const activeSkills = Array.isArray(studentProfile?.skills)
@@ -73,8 +73,8 @@ export default function AISkillDiscoveryBox({
       });
     } else {
       setFeedbackMsg({
-        title: `${domainName.split('&')[0]} is already active`,
-        subtitle: 'Questions from this domain are included in your diagnostic quiz'
+        title: `Domain Already Active: ${domainName.split('&')[0]}`,
+        subtitle: 'You can select individual skills within this domain'
       });
     }
 
@@ -83,12 +83,8 @@ export default function AISkillDiscoveryBox({
     setIsOpen(false);
   };
 
-  // Remove domain
+  // Remove domain (unrestricted - user can remove down to 0)
   const handleRemoveDomain = (domainId) => {
-    if (activeDomains.length <= 1) {
-      alert("Please keep at least 1 focus domain active for your diagnostic assessment.");
-      return;
-    }
     const updatedDomains = activeDomains.filter(d => d !== domainId);
     const currentSkills = Array.isArray(studentProfile?.skills) ? studentProfile.skills : [];
     const remainingSkills = currentSkills.filter(s => {
@@ -427,29 +423,35 @@ export default function AISkillDiscoveryBox({
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {activeSkills.map((skillName, idx) => {
-              const domainId = findDomainForSkill(skillName);
-              const domObj = MASTER_DOMAINS.find(d => d.id === domainId);
-              return (
-                <span
-                  key={idx}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-950/40 text-cyan-200 border border-cyan-500/40 flex items-center gap-2 shadow-sm"
-                >
-                  <span className="text-sm">{domObj?.icon || '⚡'}</span>
-                  <span>{skillName}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveSkill(skillName)}
-                    title={`Remove ${skillName}`}
-                    className="hover:text-rose-400 hover:bg-rose-500/20 p-0.5 rounded-full transition-colors cursor-pointer"
+          {activeSkills.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {activeSkills.map((skillName, idx) => {
+                const domainId = findDomainForSkill(skillName);
+                const domObj = MASTER_DOMAINS.find(d => d.id === domainId);
+                return (
+                  <span
+                    key={idx}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-cyan-950/40 text-cyan-200 border border-cyan-500/40 flex items-center gap-2 shadow-sm"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              );
-            })}
-          </div>
+                    <span className="text-sm">{domObj?.icon || '⚡'}</span>
+                    <span>{skillName}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skillName)}
+                      title={`Remove ${skillName}`}
+                      className="hover:text-rose-400 hover:bg-rose-500/20 p-0.5 rounded-full transition-colors cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-slate-400 text-xs">
+              <span>No focus skills added yet. Search above or click any discipline below to select manually.</span>
+            </div>
+          )}
         </div>
 
         {/* Active Domains List */}
@@ -461,29 +463,35 @@ export default function AISkillDiscoveryBox({
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {activeDomains.map(domainId => {
-              const dObj = MASTER_DOMAINS.find(d => d.id === domainId);
-              if (!dObj) return null;
-              return (
-                <span
-                  key={domainId}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-200 border border-emerald-500/40 flex items-center gap-2 shadow-sm"
-                >
-                  <span>{dObj.icon}</span>
-                  <span>{dObj.name.split('&')[0]}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveDomain(domainId)}
-                    title="Remove domain"
-                    className="hover:text-rose-400 hover:bg-rose-500/20 p-0.5 rounded-full transition-colors cursor-pointer"
+          {activeDomains.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {activeDomains.map(domainId => {
+                const dObj = MASTER_DOMAINS.find(d => d.id === domainId);
+                if (!dObj) return null;
+                return (
+                  <span
+                    key={domainId}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-200 border border-emerald-500/40 flex items-center gap-2 shadow-sm"
                   >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              );
-            })}
-          </div>
+                    <span>{dObj.icon}</span>
+                    <span>{dObj.name.split('&')[0]}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveDomain(domainId)}
+                      title="Remove domain"
+                      className="hover:text-rose-400 hover:bg-rose-500/20 p-0.5 rounded-full transition-colors cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-3 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-slate-400 text-xs">
+              <span>No disciplines selected yet. Click any domain below to select manually:</span>
+            </div>
+          )}
         </div>
 
         {/* Diagnostic Quiz Guarantee Notice */}

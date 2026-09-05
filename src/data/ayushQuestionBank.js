@@ -880,9 +880,10 @@ export function getTenQuestionsForDomains(selectedDomainIds = [], studentSkills 
     });
   }
 
-  const domains = Array.from(domainSet).length > 0
-    ? Array.from(domainSet)
-    : ['ayurveda', 'phytochemistry', 'ai_healthtech'];
+  const domains = Array.from(domainSet);
+  if (domains.length === 0 && skillNames.length === 0) {
+    return [];
+  }
 
   let gatheredQuestions = [];
 
@@ -894,8 +895,8 @@ export function getTenQuestionsForDomains(selectedDomainIds = [], studentSkills 
     }
   });
 
-  // If gathered questions are less than 10, fill from related domains
-  if (gatheredQuestions.length < 10) {
+  // If gathered questions are less than 10, fill from related domains only if user has domains selected
+  if (gatheredQuestions.length > 0 && gatheredQuestions.length < 10) {
     const fallbackDomains = ['ai_healthtech', 'data_science', 'bioinformatics', 'phytochemistry', 'herbal_tech', 'ayurveda', 'tele_ayush', 'clinical_research'];
     fallbackDomains.forEach(fid => {
       if (!domains.includes(fid)) {
@@ -1008,9 +1009,8 @@ export function getTenQuestionsForDomains(selectedDomainIds = [], studentSkills 
 
 // Generate dynamic competencies for the student's profile & radar based on their domains
 export function generateStudentSkillsFromDomains(selectedDomainIds = []) {
-  const domains = Array.isArray(selectedDomainIds) && selectedDomainIds.length > 0 
-    ? selectedDomainIds 
-    : ['ayurveda', 'phytochemistry', 'herbal_tech'];
+  const domains = Array.isArray(selectedDomainIds) ? selectedDomainIds : [];
+  if (domains.length === 0) return [];
 
   const skills = [];
   domains.forEach(domainId => {
@@ -1020,28 +1020,13 @@ export function generateStudentSkillsFromDomains(selectedDomainIds = []) {
     }
   });
 
-  // Guarantee at least 4-6 skills for radar chart aesthetics
-  if (skills.length < 5) {
-    const coreDefault = [
-      { name: 'Phytochemistry & QC Monograph Standards', category: 'Lab & QC', currentLevel: 50, requiredLevel: 85 },
-      { name: 'Good Manufacturing Practice (Schedule T)', category: 'GMP & Compliance', currentLevel: 55, requiredLevel: 90 },
-      { name: 'Tele-Ayush Systems & NAMASTE Coding', category: 'Digital Health', currentLevel: 45, requiredLevel: 80 }
-    ];
-    coreDefault.forEach(cs => {
-      if (!skills.some(s => s.name === cs.name)) {
-        skills.push(cs);
-      }
-    });
-  }
-
-  return skills.slice(0, 7);
+  return skills.slice(0, 10);
 }
 
 // Generate recommended bridging courses tailored to the student's selected domains
 export function generateRecommendedCoursesFromDomains(selectedDomainIds = []) {
-  const domains = Array.isArray(selectedDomainIds) && selectedDomainIds.length > 0 
-    ? selectedDomainIds 
-    : ['ayurveda', 'phytochemistry'];
+  const domains = Array.isArray(selectedDomainIds) ? selectedDomainIds : [];
+  if (domains.length === 0) return [];
 
   const courseCatalog = {
     ayurveda: {
@@ -1135,20 +1120,16 @@ export function generateRecommendedCoursesFromDomains(selectedDomainIds = []) {
     if (courseCatalog[d]) courses.push(courseCatalog[d]);
   });
 
-  if (courses.length === 0) {
-    courses.push(courseCatalog.ayurveda, courseCatalog.phytochemistry);
-  }
-
   return courses.slice(0, 4);
 }
 
-// Clean initial student profile creator with NO mock data
+// Clean initial student profile creator with NO mock data and NO pre-selected values
 export function createFreshStudentProfile(user = {}) {
   const domains = Array.isArray(user.interestedDomains) && user.interestedDomains.length > 0 
     ? user.interestedDomains 
-    : (user.domains || []);
+    : (Array.isArray(user.domains) ? user.domains : []);
 
-  const studentName = user.name || user.full_name || (user.email ? user.email.split('@')[0] : 'Ayush Scholar');
+  const studentName = user.name || user.full_name || (user.email ? user.email.split('@')[0] : '');
   const college = user.college || user.institution || '';
   const degree = user.degree || '';
 
@@ -1161,27 +1142,19 @@ export function createFreshStudentProfile(user = {}) {
     institution: college,
     college: college,
     degree: degree,
-    year: user.year || 'Undergraduate Scholar',
+    year: user.year || '',
     qualifications: user.qualifications || degree || '',
     whatDone: user.whatDone || '',
     interestedDomains: domains,
     academicVerified: Boolean(user.academicVerified),
     verificationDetails: user.verificationDetails || null,
-    avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || studentName}`,
-    bio: user.bio || (domains.length > 0 
-      ? `Scholar specializing in ${domains.join(', ')}. Actively mapping skills to industry and clinical pathways.`
-      : 'Scholar exploring interdisciplinary Ayush, AI and Healthcare pathways.'),
-    skillScore: user.skillScore || 0, // Starts fresh at 0 until AI diagnostic quiz is completed!
-    readinessIndex: user.readinessIndex || 'Diagnostic Pending (Take AI Quiz)',
-    skills: generateStudentSkillsFromDomains(domains),
-    verifiedCertifications: user.verifiedCertifications || [], // Starts clean, earned via AI Diagnostic assessment!
-    completedCourses: generateRecommendedCoursesFromDomains(domains),
-    jobPreferences: user.jobPreferences || {
-      targetRole: 'Ayush Diagnostic AI & ML Engineer',
-      domain: domains[0] || 'ai_healthtech',
-      workMode: 'Hybrid', // 'Remote' | 'On-site' | 'Hybrid'
-      expectedSalary: '₹45,000 / month',
-      preferredLocation: 'Bengaluru / Remote'
-    }
+    avatar: user.avatar || (studentName ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email || studentName}` : ''),
+    bio: user.bio || '',
+    skillScore: user.skillScore || 0, // Starts fresh at 0 until AI diagnostic quiz is completed
+    readinessIndex: user.readinessIndex || 'Diagnostic Pending',
+    skills: Array.isArray(user.skills) ? user.skills : (domains.length > 0 ? generateStudentSkillsFromDomains(domains) : []),
+    verifiedCertifications: Array.isArray(user.verifiedCertifications) ? user.verifiedCertifications : [],
+    completedCourses: Array.isArray(user.completedCourses) ? user.completedCourses : (domains.length > 0 ? generateRecommendedCoursesFromDomains(domains) : []),
+    jobPreferences: user.jobPreferences || null
   };
 }

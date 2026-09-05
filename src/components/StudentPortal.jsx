@@ -63,11 +63,11 @@ export default function StudentPortal({
     setTabHistory(prev => prev.length > 1 ? prev.slice(0, -1) : prev);
   };
   
-  // Dynamic 10-question AI Skill Diagnostic Quiz based strictly on student's domains
+  // Dynamic 10-question AI Skill Diagnostic Quiz based strictly on student's domains (NO fallback defaults!)
   const studentDomains = useMemo(() => {
     return Array.isArray(studentProfile?.interestedDomains) && studentProfile.interestedDomains.length > 0
       ? studentProfile.interestedDomains
-      : ['ayurveda', 'phytochemistry'];
+      : [];
   }, [studentProfile?.interestedDomains]);
 
   // Generate the 10 questions tailored specifically to these domains and added skills
@@ -88,14 +88,14 @@ export default function StudentPortal({
   const [domainFilter, setDomainFilter] = useState('All');
   const [workModeFilter, setWorkModeFilter] = useState('All');
 
-  // Student Job & Internship Career Preferences
+  // Student Job & Internship Career Preferences (NO defaults - user must select)
   const [jobPreferences, setJobPreferences] = useState(() => {
     return studentProfile?.jobPreferences || {
-      targetRole: 'AI Health Informatics Specialist',
-      domain: 'ai_healthtech',
-      workMode: 'Hybrid',
-      expectedSalary: '₹45,000 / month',
-      preferredLocation: 'Bengaluru / Hybrid'
+      targetRole: '',
+      domain: '',
+      workMode: '',
+      expectedSalary: '',
+      preferredLocation: ''
     };
   });
   const [isEditingPreferences, setIsEditingPreferences] = useState(false);
@@ -174,7 +174,7 @@ export default function StudentPortal({
     });
   };
 
-  const currentQ = assessmentQuestions[quizIndex] || assessmentQuestions[0];
+  const currentQ = assessmentQuestions && assessmentQuestions.length > 0 ? (assessmentQuestions[quizIndex] || assessmentQuestions[0]) : null;
 
   const handleAnswerSubmit = () => {
     if (selectedAnswer === null || !currentQ) return;
@@ -389,20 +389,27 @@ export default function StudentPortal({
                 )}
               </div>
               <p className="text-slate-400 text-xs mt-1.5 max-w-xl line-clamp-2">
-                {studentProfile.bio || 'Student scholar specializing in evidence-based scientific research and clinical excellence.'}
+                {studentProfile.bio || 'Student scholar workspace. Select your focus domains and skills below to initialize your personalized curriculum and career benchmarks.'}
               </p>
 
               {/* Student Domains Pills */}
               <div className="flex flex-wrap gap-1.5 mt-2">
-                {studentDomains.map(dId => {
-                  const dObj = MASTER_DOMAINS.find(item => item.id === dId) || AYUSH_DOMAINS.find(item => item.id === dId);
-                  return (
-                    <span key={dId} className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                      <span>{dObj?.icon || '🌿'}</span>
-                      <span>{dObj?.name ? dObj.name.split('&')[0].trim() : dId}</span>
-                    </span>
-                  );
-                })}
+                {studentDomains.length > 0 ? (
+                  studentDomains.map(dId => {
+                    const dObj = MASTER_DOMAINS.find(item => item.id === dId) || AYUSH_DOMAINS.find(item => item.id === dId);
+                    return (
+                      <span key={dId} className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <span>{dObj?.icon || '🌿'}</span>
+                        <span>{dObj?.name ? dObj.name.split('&')[0].trim() : dId}</span>
+                      </span>
+                    );
+                  })
+                ) : (
+                  <span className="text-amber-400/90 text-xs italic flex items-center gap-1">
+                    <Compass className="w-3.5 h-3.5 text-amber-400" />
+                    No focus domains selected yet (Select below to personalize your diagnostic quiz)
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -430,33 +437,43 @@ export default function StudentPortal({
 
         {/* Quick Career & Internship Preferences Summary Bar */}
         <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-slate-400 font-semibold flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5 text-cyan-400" /> Target Career:
-            </span>
-            <span className="font-bold text-white bg-slate-800/90 px-2.5 py-0.5 rounded-lg border border-slate-700">
-              {jobPreferences.targetRole}
-            </span>
-            <span className="text-slate-600">•</span>
-            <span className="text-slate-400 font-medium">Domain:</span>
-            <span className="font-semibold text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/30">
-              {MASTER_DOMAINS.find(d => d.id === jobPreferences.domain)?.name.split('&')[0] || jobPreferences.domain}
-            </span>
-            <span className="text-slate-600">•</span>
-            <span className="text-slate-400 font-medium">Mode:</span>
-            <span className={`font-semibold px-2 py-0.5 rounded-md text-[11px] border ${
-              jobPreferences.workMode === 'Remote' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' :
-              jobPreferences.workMode === 'Hybrid' ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30' :
-              'bg-amber-500/10 text-amber-300 border-amber-500/30'
-            }`}>
-              {jobPreferences.workMode}
-            </span>
-            <span className="text-slate-600">•</span>
-            <span className="text-slate-400 font-medium">Target Salary:</span>
-            <span className="font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30">
-              {jobPreferences.expectedSalary}
-            </span>
-          </div>
+          {(!jobPreferences.targetRole && !jobPreferences.domain) ? (
+            <div className="flex flex-wrap items-center gap-2 text-slate-400">
+              <span className="text-slate-400 font-semibold flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-cyan-400" /> Target Career:
+              </span>
+              <span className="text-amber-400/90 font-medium">Not Selected Yet (Click to set preferences)</span>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-slate-400 font-semibold flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-cyan-400" /> Target Career:
+              </span>
+              <span className="font-bold text-white bg-slate-800/90 px-2.5 py-0.5 rounded-lg border border-slate-700">
+                {jobPreferences.targetRole || 'Not specified'}
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-400 font-medium">Domain:</span>
+              <span className="font-semibold text-emerald-300 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/30">
+                {MASTER_DOMAINS.find(d => d.id === jobPreferences.domain)?.name.split('&')[0] || jobPreferences.domain || 'Not selected'}
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-400 font-medium">Mode:</span>
+              <span className={`font-semibold px-2 py-0.5 rounded-md text-[11px] border ${
+                jobPreferences.workMode === 'Remote' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' :
+                jobPreferences.workMode === 'Hybrid' ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30' :
+                jobPreferences.workMode ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' :
+                'bg-slate-800 text-slate-400 border-slate-700'
+              }`}>
+                {jobPreferences.workMode || 'Not selected'}
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-400 font-medium">Target Salary:</span>
+              <span className="font-bold text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/30">
+                {jobPreferences.expectedSalary || 'Not specified'}
+              </span>
+            </div>
+          )}
 
           <button
             onClick={() => {
@@ -465,7 +482,7 @@ export default function StudentPortal({
             }}
             className="text-cyan-400 hover:text-cyan-300 font-bold text-xs flex items-center gap-1.5 hover:underline cursor-pointer ml-auto"
           >
-            <Edit3 className="w-3.5 h-3.5" /> Edit Preferences
+            <Edit3 className="w-3.5 h-3.5" /> {(!jobPreferences.targetRole && !jobPreferences.domain) ? 'Set Career Preferences' : 'Edit Preferences'}
           </button>
         </div>
 
@@ -582,7 +599,7 @@ export default function StudentPortal({
                       <Target className="w-5 h-5 text-emerald-400" /> Domain Competency vs. Industry Standard
                     </h3>
                     <p className="text-slate-400 text-xs mt-1">
-                      Mapped specifically to your chosen Ayush disciplines: {studentDomains.join(', ')}
+                      Mapped specifically to your chosen Ayush disciplines: {studentDomains.length > 0 ? studentDomains.join(', ') : 'None selected yet'}
                     </p>
                   </div>
                   <button 
@@ -594,43 +611,55 @@ export default function StudentPortal({
                 </div>
 
                 <div className="space-y-4">
-                  {studentSkillsList.map((skill, index) => {
-                    const gap = skill.requiredLevel - skill.currentLevel;
-                    const isMet = gap <= 0;
-                    return (
-                      <div key={index} className="space-y-2 p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/60 hover:border-slate-700 transition-all">
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-slate-200 text-xs sm:text-sm">{skill.name}</span>
-                            <span className="px-2 py-0.5 text-[10px] rounded-full bg-slate-800 text-slate-400 border border-slate-700 hidden sm:inline">
-                              {skill.category}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3 text-xs">
-                            <span className="text-slate-400">Current: <strong className="text-emerald-400">{skill.currentLevel}%</strong></span>
-                            <span className="text-slate-400">Target: <strong className="text-cyan-400">{skill.requiredLevel}%</strong></span>
-                            <span className={`px-2 py-0.5 rounded font-medium text-[11px] ${isMet ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
-                              {isMet ? 'Aligned' : `Gap: -${gap}%`}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Dual Layer Progress Bar */}
-                        <div className="relative w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
-                          {/* Target Marker */}
-                          <div 
-                            className="absolute top-0 bottom-0 bg-cyan-500/30 rounded-full" 
-                            style={{ width: `${skill.requiredLevel}%` }}
-                          ></div>
-                          {/* Current Level */}
-                          <div 
-                            className="absolute top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500" 
-                            style={{ width: `${skill.currentLevel}%` }}
-                          ></div>
-                        </div>
+                  {studentSkillsList.length === 0 ? (
+                    <div className="p-8 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto">
+                        <Sparkles className="w-6 h-6" />
                       </div>
-                    );
-                  })}
+                      <h4 className="text-white font-bold text-sm">No Focus Disciplines or Skills Selected Yet</h4>
+                      <p className="text-xs text-slate-400 max-w-md mx-auto">
+                        Search and select disciplines in the AI Skill Discovery & Domain Mapper above. Your dynamic competency radar and skill gap analysis will populate instantly.
+                      </p>
+                    </div>
+                  ) : (
+                    studentSkillsList.map((skill, index) => {
+                      const gap = skill.requiredLevel - skill.currentLevel;
+                      const isMet = gap <= 0;
+                      return (
+                        <div key={index} className="space-y-2 p-3.5 rounded-xl bg-slate-900/40 border border-slate-800/60 hover:border-slate-700 transition-all">
+                          <div className="flex items-center justify-between text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-slate-200 text-xs sm:text-sm">{skill.name}</span>
+                              <span className="px-2 py-0.5 text-[10px] rounded-full bg-slate-800 text-slate-400 border border-slate-700 hidden sm:inline">
+                                {skill.category}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs">
+                              <span className="text-slate-400">Current: <strong className="text-emerald-400">{skill.currentLevel}%</strong></span>
+                              <span className="text-slate-400">Target: <strong className="text-cyan-400">{skill.requiredLevel}%</strong></span>
+                              <span className={`px-2 py-0.5 rounded font-medium text-[11px] ${isMet ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                                {isMet ? 'Aligned' : `Gap: -${gap}%`}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Dual Layer Progress Bar */}
+                          <div className="relative w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                            {/* Target Marker */}
+                            <div 
+                              className="absolute top-0 bottom-0 bg-cyan-500/30 rounded-full" 
+                              style={{ width: `${skill.requiredLevel}%` }}
+                            ></div>
+                            {/* Current Level */}
+                            <div 
+                              className="absolute top-0 bottom-0 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500" 
+                              style={{ width: `${skill.currentLevel}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
@@ -640,29 +669,37 @@ export default function StudentPortal({
                   <BookOpen className="w-5 h-5 text-cyan-400" /> Recommended Bridge Modules for Your Domains
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(studentProfile.completedCourses || []).map((course, idx) => (
-                    <div key={idx} className="glass-card rounded-xl p-4 flex flex-col justify-between">
-                      <div>
-                        <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
-                          <span>{course.provider}</span>
-                          <span className="text-emerald-400 font-semibold">{course.score}</span>
-                        </div>
-                        <h4 className="text-sm font-bold text-white line-clamp-2">{course.title}</h4>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
-                        <div className="w-2/3 bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                          <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${course.progress || 10}%` }}></div>
-                        </div>
-                        <button 
-                          onClick={() => alert(`Enrolling in: ${course.title}`)}
-                          className="text-xs text-emerald-400 font-medium hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          Access <ChevronRight className="w-3 h-3" />
-                        </button>
-                      </div>
+                  {(studentProfile.completedCourses || []).length === 0 ? (
+                    <div className="col-span-full p-6 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-2">
+                      <p className="text-xs text-slate-400">
+                        Select your focus domains in the engine above to reveal recommended bridge modules from NPTEL, CCRAS, and AYUSH institutes.
+                      </p>
                     </div>
-                  ))}
+                  ) : (
+                    (studentProfile.completedCourses || []).map((course, idx) => (
+                      <div key={idx} className="glass-card rounded-xl p-4 flex flex-col justify-between">
+                        <div>
+                          <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
+                            <span>{course.provider}</span>
+                            <span className="text-emerald-400 font-semibold">{course.score}</span>
+                          </div>
+                          <h4 className="text-sm font-bold text-white line-clamp-2">{course.title}</h4>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+                          <div className="w-2/3 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                            <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${course.progress || 10}%` }}></div>
+                          </div>
+                          <button 
+                            onClick={() => alert(`Enrolling in: ${course.title}`)}
+                            className="text-xs text-emerald-400 font-medium hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            Access <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -695,8 +732,18 @@ export default function StudentPortal({
                     <polygon points="100,24 163,64 163,136 100,172 37,136 37,64" fill="rgba(6,182,212,0.1)" stroke="#06b6d4" strokeWidth="1.5" strokeDasharray="3,3" />
 
                     {/* Student Dynamic Score Polygon */}
-                    <polygon points={radarPoints} fill="rgba(16,185,129,0.3)" stroke="#10b981" strokeWidth="2.5" className="transition-all duration-700" />
+                    {studentSkillsList.length > 0 && (
+                      <polygon points={radarPoints} fill="rgba(16,185,129,0.3)" stroke="#10b981" strokeWidth="2.5" className="transition-all duration-700" />
+                    )}
                   </svg>
+
+                  {studentSkillsList.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <span className="text-[11px] font-medium text-slate-400 bg-slate-950/80 px-3 py-1.5 rounded-lg border border-slate-800 shadow-md">
+                        Select disciplines to plot live radar
+                      </span>
+                    </div>
+                  )}
 
                   <div className="absolute bottom-1 right-1 text-[10px] text-slate-400 bg-slate-900/80 px-2 py-1 rounded border border-slate-800">
                     <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1"></span> You
@@ -740,15 +787,19 @@ export default function StudentPortal({
             {/* Domain & Skill tags being assessed */}
             <div className="flex flex-wrap items-center gap-1.5 justify-end">
               <span className="text-[11px] text-slate-400 hidden sm:inline font-medium">Assessing Disciplines:</span>
-              {studentDomains.map(dId => {
-                const domObj = MASTER_DOMAINS.find(d => d.id === dId) || AYUSH_DOMAINS.find(d => d.id === dId);
-                return (
-                  <span key={dId} className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
-                    <span>{domObj?.icon || '⭐'}</span>
-                    <span>{domObj?.badge || dId}</span>
-                  </span>
-                );
-              })}
+              {studentDomains.length > 0 ? (
+                studentDomains.map(dId => {
+                  const domObj = MASTER_DOMAINS.find(d => d.id === dId) || AYUSH_DOMAINS.find(d => d.id === dId);
+                  return (
+                    <span key={dId} className="px-2.5 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                      <span>{domObj?.icon || '⭐'}</span>
+                      <span>{domObj?.badge || dId}</span>
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="text-amber-400/90 text-[11px] italic font-medium">None Selected Yet</span>
+              )}
             </div>
           </div>
 
@@ -786,12 +837,12 @@ export default function StudentPortal({
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                 <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
                   <span className="text-[10px] text-slate-400 block mb-1">Target Job Role</span>
-                  <strong className="text-white text-xs line-clamp-1">{jobPreferences.targetRole}</strong>
+                  <strong className="text-white text-xs line-clamp-1">{jobPreferences.targetRole || 'Not specified'}</strong>
                 </div>
                 <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
                   <span className="text-[10px] text-slate-400 block mb-1">Internship Domain</span>
                   <strong className="text-emerald-300 text-xs line-clamp-1">
-                    {MASTER_DOMAINS.find(d => d.id === jobPreferences.domain)?.name.split('&')[0] || jobPreferences.domain}
+                    {jobPreferences.domain ? (MASTER_DOMAINS.find(d => d.id === jobPreferences.domain)?.name.split('&')[0] || jobPreferences.domain) : 'Not selected'}
                   </strong>
                 </div>
                 <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
@@ -799,14 +850,15 @@ export default function StudentPortal({
                   <span className={`inline-block px-2 py-0.5 rounded font-bold text-[11px] ${
                     jobPreferences.workMode === 'Remote' ? 'bg-emerald-500/20 text-emerald-300' :
                     jobPreferences.workMode === 'Hybrid' ? 'bg-cyan-500/20 text-cyan-300' :
-                    'bg-amber-500/20 text-amber-300'
+                    jobPreferences.workMode ? 'bg-amber-500/20 text-amber-300' :
+                    'bg-slate-800 text-slate-400'
                   }`}>
-                    {jobPreferences.workMode}
+                    {jobPreferences.workMode || 'Not selected'}
                   </span>
                 </div>
                 <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
                   <span className="text-[10px] text-slate-400 block mb-1">Expected Salary / Stipend</span>
-                  <strong className="text-amber-300 text-xs font-mono">{jobPreferences.expectedSalary}</strong>
+                  <strong className="text-amber-300 text-xs font-mono">{jobPreferences.expectedSalary || 'Not specified'}</strong>
                 </div>
               </div>
             ) : (
@@ -843,6 +895,7 @@ export default function StudentPortal({
                       onChange={e => setPrefForm(prev => ({ ...prev, domain: e.target.value }))}
                       className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-cyan-500 cursor-pointer"
                     >
+                      <option value="">-- Select an Internship Domain (Click to Choose) --</option>
                       {MASTER_DOMAINS.map(d => (
                         <option key={d.id} value={d.id}>
                           {d.icon} {d.name} ({d.badge})
@@ -921,7 +974,33 @@ export default function StudentPortal({
             )}
           </div>
 
-          {!quizCompleted ? (
+          {assessmentQuestions.length === 0 ? (
+            <div className="p-8 rounded-2xl bg-slate-900/60 border border-slate-800 text-center space-y-6">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20">
+                <Sparkles className="w-7 h-7" />
+              </div>
+              <div className="space-y-1.5 max-w-lg mx-auto">
+                <h3 className="text-lg font-bold text-white">Select a Domain to Generate Your 10-MCQ Diagnostic Assessment</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  No default domains are pre-selected. Choose one or more disciplines below to dynamically generate 10 rigorous clinical &amp; research diagnostic questions tailored specifically to your chosen field:
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-w-3xl mx-auto pt-2">
+                {MASTER_DOMAINS.map(dom => (
+                  <button
+                    key={dom.id}
+                    onClick={() => handleUpdateProfileSkills([dom.id])}
+                    className="p-3.5 rounded-xl bg-slate-900/80 hover:bg-emerald-500/10 border border-slate-800 hover:border-emerald-500/40 text-left transition-all group cursor-pointer"
+                  >
+                    <div className="text-2xl mb-1">{dom.icon}</div>
+                    <div className="text-xs font-bold text-slate-200 group-hover:text-emerald-300 line-clamp-1">{dom.name}</div>
+                    <div className="text-[10px] text-slate-500 group-hover:text-emerald-400 font-semibold">{dom.badge}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : !quizCompleted && currentQ ? (
             <div>
               {/* Progress & Header */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
@@ -1262,13 +1341,13 @@ export default function StudentPortal({
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
                 <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
                   <span className="text-[10px] text-slate-400 block mb-1">Target Job Role</span>
-                  <strong className="text-white text-xs block truncate">{jobPreferences.targetRole}</strong>
+                  <strong className="text-white text-xs block truncate">{jobPreferences.targetRole || 'Not specified'}</strong>
                 </div>
 
                 <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
                   <span className="text-[10px] text-slate-400 block mb-1">Internship Domain</span>
                   <strong className="text-emerald-300 text-xs block truncate">
-                    {MASTER_DOMAINS.find(d => d.id === jobPreferences.domain)?.name.split('&')[0] || jobPreferences.domain}
+                    {jobPreferences.domain ? (MASTER_DOMAINS.find(d => d.id === jobPreferences.domain)?.name.split('&')[0] || jobPreferences.domain) : 'Not selected'}
                   </strong>
                 </div>
 
@@ -1277,15 +1356,16 @@ export default function StudentPortal({
                   <span className={`inline-block px-2.5 py-0.5 rounded font-bold text-[11px] ${
                     jobPreferences.workMode === 'Remote' ? 'bg-emerald-500/20 text-emerald-300' :
                     jobPreferences.workMode === 'Hybrid' ? 'bg-cyan-500/20 text-cyan-300' :
-                    'bg-amber-500/20 text-amber-300'
+                    jobPreferences.workMode ? 'bg-amber-500/20 text-amber-300' :
+                    'bg-slate-800 text-slate-400'
                   }`}>
-                    {jobPreferences.workMode}
+                    {jobPreferences.workMode || 'Not selected'}
                   </span>
                 </div>
 
                 <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800">
                   <span className="text-[10px] text-slate-400 block mb-1">Expected Salary</span>
-                  <strong className="text-amber-300 text-xs font-mono block truncate">{jobPreferences.expectedSalary}</strong>
+                  <strong className="text-amber-300 text-xs font-mono block truncate">{jobPreferences.expectedSalary || 'Not specified'}</strong>
                 </div>
 
                 <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-800 col-span-2 md:col-span-1">
@@ -1328,6 +1408,7 @@ export default function StudentPortal({
                       onChange={e => setPrefForm(prev => ({ ...prev, domain: e.target.value }))}
                       className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-xs text-white focus:outline-none focus:border-emerald-500 cursor-pointer"
                     >
+                      <option value="">-- Select a Category / Domain (Click to Choose) --</option>
                       {MASTER_DOMAINS.map(d => (
                         <option key={d.id} value={d.id}>
                           {d.icon} {d.name} ({d.badge})

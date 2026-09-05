@@ -65,16 +65,16 @@ export default function ProfileSetupModal({
   });
   const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
 
-  // Domains Selected
+  // Domains Selected - NO PRE-SELECTION
   const [selectedDomains, setSelectedDomains] = useState(() => {
     if (Array.isArray(currentUser?.interestedDomains) && currentUser.interestedDomains.length > 0) {
       return currentUser.interestedDomains;
     }
-    return ['ai_healthtech', 'phytochemistry'];
+    return [];
   });
 
-  // Academic Stage & Portfolio Details
-  const [academicYear, setAcademicYear] = useState(currentUser?.year || '3rd Professional Year');
+  // Academic Stage & Portfolio Details - NO PRE-SELECTION
+  const [academicYear, setAcademicYear] = useState(currentUser?.year || '');
   const [whatDone, setWhatDone] = useState(currentUser?.whatDone || '');
 
   // AI Verification State
@@ -104,20 +104,23 @@ export default function ProfileSetupModal({
         return [...prev, degName];
       }
     });
-    setAiVerificationResult(null);
   };
 
   // Add Custom Degree
-  const handleAddCustomDegree = () => {
-    if (customDegreeInput.trim()) {
-      if (!selectedDegrees.includes(customDegreeInput.trim())) {
-        setSelectedDegrees(prev => [...prev, customDegreeInput.trim()]);
-      }
-      setCustomDegreeInput('');
-      setShowCustomDegreeInput(false);
-      setStepError('');
-      setAiVerificationResult(null);
+  const handleAddCustomDegree = (e) => {
+    if (e) e.preventDefault();
+    const clean = customDegreeInput.trim();
+    if (!clean) return;
+    if (!selectedDegrees.includes(clean)) {
+      setSelectedDegrees(prev => [...prev, clean]);
     }
+    setCustomDegreeInput('');
+    setShowCustomDegreeInput(false);
+  };
+
+  // Remove degree
+  const handleRemoveDegree = (degName) => {
+    setSelectedDegrees(prev => prev.filter(d => d !== degName));
   };
 
   // Select College from dropdown
@@ -133,10 +136,6 @@ export default function ProfileSetupModal({
     setStepError('');
     setSelectedDomains(prev => {
       if (prev.includes(domainId)) {
-        if (prev.length === 1) {
-          setStepError('Please maintain at least 1 career domain to map your 10-MCQ quiz.');
-          return prev;
-        }
         return prev.filter(id => id !== domainId);
       } else {
         return [...prev, domainId];

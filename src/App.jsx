@@ -59,7 +59,13 @@ export default function App() {
   const [studentProfile, setStudentProfile] = useState(() => {
     try {
       const saved = localStorage.getItem('ayush_active_student_profile');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Discard any old mock data like Ananya Sharma
+        if (parsed && parsed.name && parsed.name !== 'Ananya Sharma') {
+          return parsed;
+        }
+      }
     } catch (e) {}
     return createFreshStudentProfile({
       name: '',
@@ -70,7 +76,7 @@ export default function App() {
   });
 
   const [jobs, setJobs] = useState(INITIAL_INTERNSHIPS);
-  const [applications, setApplications] = useState(['JOB-101']);
+  const [applications, setApplications] = useState([]);
   const [candidates, setCandidates] = useState(INITIAL_CANDIDATES);
 
   // Check Existing Supabase Auth Session on Load

@@ -1,35 +1,22 @@
 // Production Dataset for Ministry of Ayush Academia-Industry Skill Mapping Infrastructure
 
 export const INITIAL_STUDENT_PROFILE = {
-  id: "STD-2026-089",
-  name: "Ananya Sharma",
-  email: "ananya.sharma@ayush-univ.edu.in",
-  institution: "National Institute of Ayurveda, Jaipur",
-  degree: "B.A.M.S. & M.Sc. Herbal Bio-Technology",
-  year: "Final Year (2026)",
-  avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-  bio: "Passionate about combining traditional Ayush formulation principles with modern bio-analytics, phytochemistry, and digital health technology.",
-  skillScore: 78,
-  readinessIndex: "High (Ready for Industry Placement)",
-  skills: [
-    { name: "Phytochemistry & QC", category: "Ayush Core", currentLevel: 85, requiredLevel: 90 },
-    { name: "Herbal Formulation QA", category: "Ayush Core", currentLevel: 80, requiredLevel: 85 },
-    { name: "Bio-Analytics & HPLC", category: "Lab Skills", currentLevel: 72, requiredLevel: 88 },
-    { name: "Tele-Ayush Systems", category: "Digital Health", currentLevel: 65, requiredLevel: 80 },
-    { name: "Regulatory Compliance (AYUSH & ISO)", category: "Regulatory", currentLevel: 70, requiredLevel: 85 },
-    { name: "Clinical Data Management", category: "Data Science", currentLevel: 60, requiredLevel: 75 },
-    { name: "Good Manufacturing Practice (GMP)", category: "Ayush Core", currentLevel: 88, requiredLevel: 90 }
-  ],
-  verifiedCertifications: [
-    { title: "Certified Herbal QA Auditor", issuer: "Pharmacopoeia Commission for Indian Medicine & Homoeopathy", date: "Jan 2026", id: "PCIMH-9921" },
-    { title: "Digital Health System Protocols", issuer: "Ministry of Ayush & CDAC", date: "Nov 2025", id: "AYUSH-CDAC-441" },
-    { title: "HPLC & LC-MS Analytical Procedures", issuer: "CSIR-IHBT", date: "Aug 2025", id: "CSIR-7732" }
-  ],
-  completedCourses: [
-    { title: "Standardization of Phytopharmaceuticals", provider: "Swayam / Ministry of Education", progress: 100, score: "94%" },
-    { title: "AI in Traditional Medicine Research", provider: "IIT Delhi & AllIA", progress: 100, score: "88%" },
-    { title: "GMP Compliance for Herbal Products", provider: "Ayush Skill Council", progress: 85, score: "In Progress" }
-  ]
+  id: '',
+  name: '',
+  email: '',
+  institution: '',
+  college: '',
+  degree: '',
+  year: '',
+  avatar: '',
+  bio: '',
+  skillScore: 0,
+  readinessIndex: 'Diagnostic Pending',
+  skills: [],
+  verifiedCertifications: [],
+  completedCourses: [],
+  interestedDomains: [],
+  jobPreferences: null
 };
 
 export const SKILL_ASSESSMENT_QUESTIONS = [
