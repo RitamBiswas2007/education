@@ -159,20 +159,36 @@ export default function AISkillDiscoveryBox({
           </div>
         </form>
 
-        {/* AI Dropdown Menu (Appears instantly as user types or focuses) */}
+        {/* AI Skill & Career Discovery Panel (In-flow expansion, never overlaps content below) */}
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-slate-950/98 backdrop-blur-2xl border border-emerald-500/40 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-[420px] overflow-y-auto divide-y divide-slate-800/80">
+          <div className="mt-3.5 bg-slate-950/95 border border-emerald-500/40 rounded-2xl shadow-2xl overflow-hidden divide-y divide-slate-800/80 animate-in fade-in duration-200">
+            {/* Top Bar with Header & Close Button */}
+            <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900/80 border-b border-slate-800">
+              <div className="flex items-center gap-2 text-xs font-bold text-white">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>{query.trim() ? `AI Suggested Career Matches for "${query}"` : 'AI Recommended Career Domains & Skills'}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="text-[11px] text-slate-400 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 transition-all flex items-center gap-1 cursor-pointer"
+              >
+                <X className="w-3 h-3" />
+                <span>Close Panel</span>
+              </button>
+            </div>
+
             {/* 1. Direct Career Pathways & Domains */}
-            <div className="p-3">
+            <div className="p-3 sm:p-4 max-h-[360px] overflow-y-auto">
               <div className="flex items-center justify-between text-[11px] font-bold text-emerald-400 uppercase tracking-wider px-2 pb-2">
                 <span className="flex items-center gap-1.5">
                   <Briefcase className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Matching Career Domains ({searchResults.matchingDomains.length})</span>
                 </span>
-                <span className="text-[10px] text-slate-500">Click to link domain</span>
+                <span className="text-[10px] text-slate-500">Click card to link domain</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                 {searchResults.matchingDomains.map(domain => {
                   const isSelected = activeDomains.includes(domain.id);
                   return (
@@ -214,10 +230,10 @@ export default function AISkillDiscoveryBox({
             </div>
 
             {/* 2. Specific Matching Skills & Job Roles */}
-            <div className="p-3 bg-slate-900/40">
+            <div className="p-3 sm:p-4 bg-slate-900/40 border-t border-slate-800">
               <div className="text-[11px] font-bold text-cyan-400 uppercase tracking-wider px-2 pb-2 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                <span>AI Detected Skills & Job Roles</span>
+                <span>AI Detected Skills & Roles ({searchResults.suggestedSkills.length})</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
