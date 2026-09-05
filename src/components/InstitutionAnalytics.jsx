@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { INSTITUTION_ANALYTICS } from '../data/mockData';
 
-export default function InstitutionAnalytics() {
+export default function InstitutionAnalytics({ jobs = [], applications = [], studentProfile = null }) {
   const [tabHistory, setTabHistory] = useState(['overview']); // navigation history stack
   const activeTab = tabHistory[tabHistory.length - 1];
 
@@ -29,6 +29,11 @@ export default function InstitutionAnalytics() {
   };
 
   const { totalStudentsAssessed, overallReadinessRate, curriculumAlignmentIndex, industryPartnershipsCount, skillGapHeatmap, domainDemand } = INSTITUTION_ANALYTICS;
+
+  // Compute live dynamic aggregates from real state
+  const liveTotalAssessed = totalStudentsAssessed + (studentProfile && studentProfile.quizTaken ? 1 : 0);
+  const liveActiveOpportunities = jobs.length || 8;
+  const liveApplicationsCount = applications.length;
 
   return (
     <div className="space-y-6">
@@ -113,31 +118,31 @@ export default function InstitutionAnalytics() {
             <span className="text-xs text-slate-400 font-semibold uppercase">Total Students Assessed</span>
             <Users className="w-5 h-5 text-emerald-400" />
           </div>
-          <div className="text-3xl font-extrabold text-white mt-2">{totalStudentsAssessed.toLocaleString()}</div>
+          <div className="text-3xl font-extrabold text-white mt-2">{liveTotalAssessed.toLocaleString()}</div>
           <span className="text-emerald-400 text-xs font-medium flex items-center gap-1 mt-1">
-            <TrendingUp className="w-3.5 h-3.5" /> +14.2% this quarter
+            <TrendingUp className="w-3.5 h-3.5" /> Dynamic Live Tracking
           </span>
         </div>
 
         <div className="glass-panel rounded-2xl p-5 border-l-4 border-l-cyan-500">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-semibold uppercase">Placement Readiness</span>
+            <span className="text-xs text-slate-400 font-semibold uppercase">Active Opportunities</span>
             <GraduationCap className="w-5 h-5 text-cyan-400" />
           </div>
-          <div className="text-3xl font-extrabold text-cyan-400 mt-2">{overallReadinessRate}%</div>
+          <div className="text-3xl font-extrabold text-cyan-400 mt-2">{liveActiveOpportunities}</div>
           <span className="text-slate-400 text-xs font-medium mt-1 block">
-            Target: 80% Placement Eligibility
+            Academic Labs & Corporate Openings
           </span>
         </div>
 
         <div className="glass-panel rounded-2xl p-5 border-l-4 border-l-indigo-500">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400 font-semibold uppercase">Curriculum Alignment</span>
+            <span className="text-xs text-slate-400 font-semibold uppercase">Real Applications Logged</span>
             <PieChart className="w-5 h-5 text-indigo-400" />
           </div>
-          <div className="text-3xl font-extrabold text-indigo-300 mt-2">{curriculumAlignmentIndex}%</div>
+          <div className="text-3xl font-extrabold text-indigo-300 mt-2">{liveApplicationsCount}</div>
           <span className="text-slate-400 text-xs font-medium mt-1 block">
-            Ayush Industry Baseline Met
+            Synchronized Across Portals
           </span>
         </div>
 

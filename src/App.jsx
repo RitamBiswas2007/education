@@ -36,6 +36,14 @@ import {
 
 import { createFreshStudentProfile } from './data/ayushQuestionBank';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { 
+  getStoredOpportunities, 
+  saveOpportunity, 
+  getStoredApplications, 
+  saveApplication, 
+  updateApplicationStatus, 
+  subscribeToStore 
+} from './lib/realtimeStore';
 
 export default function App() {
   // Auth & Session State
@@ -75,9 +83,18 @@ export default function App() {
     });
   });
 
-  const [jobs, setJobs] = useState(INITIAL_INTERNSHIPS);
-  const [applications, setApplications] = useState([]);
+  const [jobs, setJobs] = useState(() => getStoredOpportunities());
+  const [applications, setApplications] = useState(() => getStoredApplications());
   const [candidates, setCandidates] = useState(INITIAL_CANDIDATES);
+
+  // Listen to store updates across tabs/windows
+  useEffect(() => {
+    const unsubscribe = subscribeToStore(({ channel, data }) => {
+      if (channel === 'opportunities') setJobs(data);
+      if (channel === 'applications') setApplications(data);
+    });
+    return unsubscribe;
+  }, []);
 
   // Check Existing Supabase Auth Session on Load
   useEffect(() => {
@@ -565,50 +582,70 @@ export default function App() {
     });
   };
 
-  // Apply Job Handler
-  const handleApplyJob = async (jobId) => {
-    if (!applications.includes(jobId)) {
-      setApplications(prev => [...prev, jobId]);
+  // Apply Job Handler (Works for both Industry and Academician Postings)
+  const handleApplyJob = async (jobId, jobObj = null) => {
+    const targetJob = jobObj || jobs.find(j => j.id === jobId);
+    if (!targetJob) return;
 
-      setJobs(prevJobs => prevJobs.map(j => {
-        if (j.id === jobId) {
-          return { ...j, applicantsCount: j.applicantsCount + 1 };
-        }
-        return j;
-      }));
+    const studentId = currentUser?.id || studentProfile?.id || `STD-${Date.now()}`;
+    const studentName = studentProfile?.name || currentUser?.name || 'Scholar Student';
 
-      const targetJob = jobs.find(j => j.id === jobId);
-      const newCand = {
-        id: currentUser ? currentUser.id : `STD-2026-${Math.floor(100 + Math.random() * 900)}`,
-        name: currentUser ? currentUser.name : studentProfile.name,
-        institution: currentUser ? currentUser.institution : studentProfile.institution,
-        degree: studentProfile.degree,
-        skillScore: studentProfile.skillScore,
-        matchScore: targetJob ? targetJob.matchScore : 88,
-        status: "Under Review",
-        topSkills: ["Phytochemistry", "GMP Compliance", "Tele-Ayush"],
-        appliedRole: targetJob ? targetJob.title : "Ayush Specialist"
-      };
-      setCandidates(prev => [newCand, ...prev]);
+    const alreadyApplied = applications.some(a => 
+      (typeof a === 'string' && a === jobId) || 
+      (typeof a === 'object' && a.jobId === jobId && (a.studentId === studentId || a.studentName === studentName))
+    );
 
-      if (isSupabaseConfigured && supabase) {
-        try {
-          await supabase.from('job_applications').insert([{
-            job_id: typeof jobId === 'string' && jobId.includes('-') ? null : jobId,
-            student_id: currentUser?.id && !currentUser.id.startsWith('GUEST') ? currentUser.id : null,
-            status: 'Under Review',
-            match_score: targetJob ? targetJob.matchScore : 88
-          }]);
-        } catch (e) {
-          console.log("Applied locally to state");
-        }
+    if (alreadyApplied) return;
+
+    const newApp = {
+      id: `APP-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`,
+      jobId: targetJob.id,
+      jobTitle: targetJob.title,
+      company: targetJob.company,
+      posterType: targetJob.posterType || 'industry',
+      posterId: targetJob.posterId || null,
+      posterName: targetJob.posterName || targetJob.company,
+      posterRole: targetJob.posterRole || (targetJob.posterType === 'academician' ? 'Faculty Lab Fellowship' : 'Corporate Internship'),
+      studentId: studentId,
+      studentName: studentName,
+      studentEmail: currentUser?.email || studentProfile?.email || '',
+      studentInstitution: studentProfile?.college || studentProfile?.institution || currentUser?.institution || 'Ayush Medical Institute',
+      studentDegree: studentProfile?.degree || 'Degree In Progress',
+      studentScore: studentProfile?.skillScore || 0,
+      studentSkills: Array.isArray(studentProfile?.skills) 
+        ? studentProfile.skills.map(s => typeof s === 'string' ? s : s.name)
+        : [],
+      matchScore: targetJob.matchScore || 88,
+      appliedDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      status: 'Under Review',
+      feedback: ''
+    };
+
+    const { applications: updatedApps, opportunities: updatedJobs } = saveApplication(newApp);
+    setApplications(updatedApps);
+    setJobs(updatedJobs);
+
+    // Also update candidate list for local display
+    setCandidates(prev => [newApp, ...prev.filter(c => c.id !== newApp.id)]);
+
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('job_applications').insert([{
+          job_id: typeof jobId === 'string' && jobId.includes('-') ? null : jobId,
+          student_id: currentUser?.id && !currentUser.id.startsWith('GUEST') ? currentUser.id : null,
+          status: 'Under Review',
+          match_score: targetJob.matchScore || 88
+        }]);
+      } catch (e) {
+        console.log("Applied locally to state");
       }
     }
   };
 
-  // Add Job Handler (Industry Portal)
+  // Add Job Handler (Works for Industry & Academician Portals)
   const handleAddJob = async (newJob) => {
-    setJobs(prev => [newJob, ...prev]);
+    const updatedJobs = saveOpportunity(newJob);
+    setJobs(updatedJobs);
 
     if (isSupabaseConfigured && supabase) {
       try {
@@ -619,11 +656,11 @@ export default function App() {
           stipend: newJob.stipend,
           duration: newJob.duration,
           domain: newJob.domain,
-          match_score: newJob.matchScore,
+          match_score: newJob.matchScore || 90,
           skills_required: newJob.skillsRequired,
           description: newJob.description,
           deadline: newJob.deadline,
-          status: newJob.status
+          status: newJob.status || 'Active'
         }]);
       } catch (e) {
         console.log("Job saved locally");
@@ -631,14 +668,11 @@ export default function App() {
     }
   };
 
-  // Update Candidate Status (Industry Portal)
-  const handleUpdateCandidateStatus = (candidateId, newStatus) => {
-    setCandidates(prev => prev.map(c => {
-      if (c.id === candidateId) {
-        return { ...c, status: newStatus };
-      }
-      return c;
-    }));
+  // Update Candidate / Application Status (Both Industry and Academician Portals)
+  const handleUpdateCandidateStatus = (applicationId, newStatus, feedback = '') => {
+    const updatedApps = updateApplicationStatus(applicationId, newStatus, feedback);
+    setApplications(updatedApps);
+    setCandidates(prev => prev.map(c => c.id === applicationId ? { ...c, status: newStatus, feedback } : c));
   };
 
   // Render Auth Screen if not signed in
@@ -797,15 +831,26 @@ export default function App() {
             candidates={candidates}
             onUpdateCandidateStatus={handleUpdateCandidateStatus}
             currentUser={currentUser}
+            applications={applications}
           />
         )}
 
         {activeRole === 'academician' && (
-          <AcademicianPortal currentUser={currentUser} />
+          <AcademicianPortal 
+            currentUser={currentUser}
+            opportunities={jobs}
+            onAddOpportunity={handleAddJob}
+            applications={applications}
+            onUpdateApplicationStatus={handleUpdateCandidateStatus}
+          />
         )}
 
         {activeRole === 'admin' && (
-          <InstitutionAnalytics />
+          <InstitutionAnalytics 
+            jobs={jobs}
+            applications={applications}
+            studentProfile={studentProfile}
+          />
         )}
       </main>
 

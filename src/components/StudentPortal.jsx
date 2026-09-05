@@ -87,6 +87,22 @@ export default function StudentPortal({
   const [jobSearch, setJobSearch] = useState('');
   const [domainFilter, setDomainFilter] = useState('All');
   const [workModeFilter, setWorkModeFilter] = useState('All');
+  const [typeFilter, setTypeFilter] = useState('All'); // 'All', 'industry', 'academician'
+
+  const appliedJobIds = useMemo(() => {
+    if (!Array.isArray(applications)) return [];
+    return applications.map(a => typeof a === 'string' ? a : a.jobId);
+  }, [applications]);
+
+  const myStudentApplications = useMemo(() => {
+    if (!Array.isArray(applications)) return [];
+    return applications.filter(a => {
+      if (typeof a === 'string') return true;
+      if (studentProfile?.id && a.studentId === studentProfile.id) return true;
+      if (studentProfile?.name && a.studentName === studentProfile.name) return true;
+      return true;
+    });
+  }, [applications, studentProfile]);
 
   // Student Job & Internship Career Preferences (NO defaults - user must select)
   const [jobPreferences, setJobPreferences] = useState(() => {
@@ -325,7 +341,9 @@ export default function StudentPortal({
                           job.domain === domainFilter ||
                           (domainFilter && job.domain.toLowerCase().includes(domainFilter.toLowerCase()));
     const matchesMode = workModeFilter === 'All' || job.mode === workModeFilter;
-    return matchesSearch && matchesDomain && matchesMode;
+    const matchesType = typeFilter === 'All' || 
+                        (typeFilter === 'academician' ? job.posterType === 'academician' : job.posterType !== 'academician');
+    return matchesSearch && matchesDomain && matchesMode && matchesType;
   });
 
   // Calculate polygon points for competency radar dynamically based on student's actual skills
@@ -528,6 +546,16 @@ export default function StudentPortal({
             }`}
           >
             <Briefcase className="w-4 h-4" /> Internship Opportunities ({filteredJobs.length})
+          </button>
+          <button
+            onClick={() => navigateTo('applications')}
+            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'applications' 
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <FileText className="w-4 h-4 text-cyan-400" /> My Applications Tracker ({myStudentApplications.length})
           </button>
           <button
             onClick={() => navigateTo('portfolio')}
@@ -1500,11 +1528,11 @@ export default function StudentPortal({
 
           {/* Search & Domain Filter Bar */}
           <div className="glass-panel rounded-2xl p-5 space-y-4">
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-              <div className="relative w-full md:w-96">
+            <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
+              <div className="relative w-full lg:w-96">
                 <input
                   type="text"
-                  placeholder="Search roles, companies, or skills..."
+                  placeholder="Search roles, companies, professors, or skills..."
                   value={jobSearch}
                   onChange={e => setJobSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-900/80 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
@@ -1512,22 +1540,59 @@ export default function StudentPortal({
                 <Filter className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
               </div>
 
-              {/* Work Mode Toggle */}
-              <div className="flex items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-800 self-stretch md:self-auto justify-center">
-                <span className="text-[11px] text-slate-400 font-semibold px-2">Mode:</span>
-                {['All', 'Remote', 'Hybrid', 'On-site'].map(mode => (
+              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto justify-end">
+                {/* Type Filter Toggle (Industry vs Academician) */}
+                <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                  <span className="text-[11px] text-slate-400 font-semibold px-2">Type:</span>
                   <button
-                    key={mode}
-                    onClick={() => setWorkModeFilter(mode)}
+                    onClick={() => setTypeFilter('all')}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      workModeFilter === mode
+                      typeFilter === 'all'
                         ? 'bg-emerald-500 text-slate-950 shadow-sm'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    {mode}
+                    All ({jobs.length})
                   </button>
-                ))}
+                  <button
+                    onClick={() => setTypeFilter('industry')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      typeFilter === 'industry'
+                        ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🏢 Corporate ({jobs.filter(j => (j.posterType || 'industry') === 'industry').length})
+                  </button>
+                  <button
+                    onClick={() => setTypeFilter('academician')}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      typeFilter === 'academician'
+                        ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    🎓 Academic Labs ({jobs.filter(j => j.posterType === 'academician').length})
+                  </button>
+                </div>
+
+                {/* Work Mode Toggle */}
+                <div className="flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+                  <span className="text-[11px] text-slate-400 font-semibold px-2">Mode:</span>
+                  {['All', 'Remote', 'Hybrid', 'On-site'].map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => setWorkModeFilter(mode)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        workModeFilter === mode
+                          ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -1595,13 +1660,22 @@ export default function StudentPortal({
           {filteredJobs.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {filteredJobs.map(job => {
-                const isApplied = applications.includes(job.id);
+                const isApplied = appliedJobIds.includes(job.id);
                 return (
                   <div key={job.id} className="glass-card rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden group hover:border-emerald-500/40 transition-all">
                     <div>
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex flex-wrap items-center gap-2 mb-2">
+                            {job.posterType === 'academician' ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 inline-flex items-center gap-1">
+                                🎓 Academic Research Lab
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 inline-flex items-center gap-1">
+                                🏢 Corporate Industry
+                              </span>
+                            )}
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold badge-ayush inline-block">
                               {job.domain}
                             </span>
@@ -1615,14 +1689,23 @@ export default function StudentPortal({
                           </div>
                           <h4 className="text-lg font-bold text-white group-hover:text-emerald-300 transition-colors">{job.title}</h4>
                           <p className="text-emerald-400 font-medium text-xs mt-0.5 flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5" />
-                            <span>{job.company}</span>
+                            {job.posterType === 'academician' ? (
+                              <>
+                                <GraduationCap className="w-3.5 h-3.5 text-cyan-400" />
+                                <span className="text-cyan-300">Prof. {job.posterName || job.company} • {job.company}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Building2 className="w-3.5 h-3.5" />
+                                <span>{job.company}</span>
+                              </>
+                            )}
                           </p>
                         </div>
 
                         <div className="text-right shrink-0">
                           <span className="text-[10px] text-slate-400 block uppercase font-mono">AI Match</span>
-                          <span className="text-xl font-black text-emerald-400">{job.matchScore}%</span>
+                          <span className="text-xl font-black text-emerald-400">{job.matchScore || 85}%</span>
                         </div>
                       </div>
 
@@ -1656,7 +1739,7 @@ export default function StudentPortal({
                       </div>
 
                       <button
-                        onClick={() => onApplyJob(job.id)}
+                        onClick={() => onApplyJob(job.id, job)}
                         disabled={isApplied}
                         className={`px-5 py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
                           isApplied
@@ -1838,6 +1921,234 @@ export default function StudentPortal({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* TAB 5: MY APPLICATIONS & LAB ADMISSIONS TRACKER */}
+      {activeTab === 'applications' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigateTo('jobs')}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" /> Back to Opportunities
+              </button>
+              <div>
+                <h3 className="text-xl font-black text-white flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-emerald-400" />
+                  My Applications & Lab Admissions Tracker
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Real-time synchronization with Academic Mentors and Industry Recruiters
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigateTo('jobs')}
+                className="px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" /> Browse More Openings
+              </button>
+            </div>
+          </div>
+
+          {/* Quick Metrics Bar */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="glass-card rounded-xl p-3 text-center border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Total Applied</span>
+              <span className="text-2xl font-black text-white">{myStudentApplications.length}</span>
+            </div>
+            <div className="glass-card rounded-xl p-3 text-center border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Under Review</span>
+              <span className="text-2xl font-black text-amber-400">
+                {myStudentApplications.filter(a => (a.status || '').includes('Review') || a.status === 'Applied').length}
+              </span>
+            </div>
+            <div className="glass-card rounded-xl p-3 text-center border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Interview / Shortlist</span>
+              <span className="text-2xl font-black text-cyan-400">
+                {myStudentApplications.filter(a => (a.status || '').includes('Interview') || (a.status || '').includes('Shortlist')).length}
+              </span>
+            </div>
+            <div className="glass-card rounded-xl p-3 text-center border-slate-800">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Accepted / Offered</span>
+              <span className="text-2xl font-black text-emerald-400">
+                {myStudentApplications.filter(a => (a.status || '').includes('Accepted') || (a.status || '').includes('Offer')).length}
+              </span>
+            </div>
+          </div>
+
+          {/* Applications List */}
+          {myStudentApplications.length > 0 ? (
+            <div className="space-y-4">
+              {myStudentApplications.map((app, idx) => {
+                // Determine stage number (1 to 4) based on status string
+                let currentStep = 1;
+                const statusStr = (app.status || '').toLowerCase();
+                if (statusStr.includes('review')) currentStep = 2;
+                if (statusStr.includes('shortlist') || statusStr.includes('interview')) currentStep = 3;
+                if (statusStr.includes('accept') || statusStr.includes('offer')) currentStep = 4;
+
+                const isAcademic = app.posterType === 'academician';
+
+                return (
+                  <div key={app.id || idx} className="glass-card rounded-2xl p-6 border-slate-800 hover:border-emerald-500/30 transition-all space-y-5">
+                    {/* Header Row */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          {isAcademic ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 inline-flex items-center gap-1">
+                              <GraduationCap className="w-3 h-3" /> Academic Lab Fellowship
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 inline-flex items-center gap-1">
+                              <Building2 className="w-3 h-3" /> Corporate Industry Internship
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-400">
+                            Applied on: <strong className="text-slate-300">{new Date(app.appliedAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
+                          </span>
+                        </div>
+
+                        <h4 className="text-lg font-bold text-white">{app.jobTitle}</h4>
+                        <p className="text-xs text-slate-300 flex items-center gap-2 mt-0.5">
+                          {isAcademic ? (
+                            <>
+                              <span className="text-cyan-300 font-semibold">Faculty Mentor: Prof. {app.posterName || app.company}</span>
+                              <span>•</span>
+                              <span className="text-slate-400">{app.company}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-emerald-400 font-semibold">{app.company}</span>
+                              <span>•</span>
+                              <span className="text-slate-400">{app.domain || 'AYUSH Industry'}</span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className="shrink-0 flex items-center gap-2">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 ${
+                          currentStep === 4
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-lg shadow-emerald-500/20'
+                            : currentStep === 3
+                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 shadow-lg shadow-cyan-500/20'
+                            : currentStep === 2
+                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                            : 'bg-slate-800 text-slate-300 border-slate-700'
+                        }`}>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          {app.status || 'Application Submitted'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Visual 4-Step Progress Pipeline */}
+                    <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800/80">
+                      <div className="text-[11px] font-bold text-slate-400 mb-3 flex items-center justify-between">
+                        <span>Recruitment & Admission Pipeline:</span>
+                        <span className="text-emerald-400 font-mono">Stage {currentStep} of 4</span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 relative">
+                        {[
+                          { step: 1, label: 'Submitted', sub: 'Profile Sent' },
+                          { step: 2, label: 'Profile Review', sub: 'Diagnostic Checked' },
+                          { step: 3, label: 'Shortlist / Interview', sub: 'Mentor Discussion' },
+                          { step: 4, label: isAcademic ? 'Lab Admission' : 'Offer Extended', sub: isAcademic ? 'Fellowship Granted' : 'Letter Issued' },
+                        ].map((s) => {
+                          const isDone = currentStep > s.step;
+                          const isCurrent = currentStep === s.step;
+                          return (
+                            <div
+                              key={s.step}
+                              className={`p-3 rounded-xl border text-center transition-all ${
+                                isCurrent
+                                  ? 'bg-emerald-500/10 border-emerald-500/50 shadow-md shadow-emerald-950'
+                                  : isDone
+                                  ? 'bg-slate-900 border-slate-700 text-slate-300'
+                                  : 'bg-slate-950/40 border-slate-800/40 text-slate-500 opacity-60'
+                              }`}
+                            >
+                              <div className="flex items-center justify-center gap-1.5 mb-1">
+                                {isDone ? (
+                                  <div className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center font-bold text-xs">
+                                    ✓
+                                  </div>
+                                ) : isCurrent ? (
+                                  <div className="w-5 h-5 rounded-full bg-emerald-400 text-slate-950 flex items-center justify-center font-bold text-xs animate-pulse">
+                                    {s.step}
+                                  </div>
+                                ) : (
+                                  <div className="w-5 h-5 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-xs">
+                                    {s.step}
+                                  </div>
+                                )}
+                                <span className={`text-xs font-bold ${isCurrent ? 'text-emerald-300' : isDone ? 'text-white' : 'text-slate-500'}`}>
+                                  {s.label}
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-slate-400 block">{s.sub}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Candidate Diagnostic and Opportunity Specs */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-800/60 text-xs text-slate-400">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Stipend: <strong className="text-amber-300 font-mono">{app.stipend || 'Competitive'}</strong></span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
+                          <span>Duration: <strong className="text-slate-200">{app.duration || '3 Months'}</strong></span>
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Award className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Verified Diagnostic: <strong className="text-emerald-300 font-mono">{app.diagnosticScore || 85}%</strong></span>
+                        </span>
+                      </div>
+
+                      {/* Mentor Feedback or Next Steps */}
+                      {app.mentorNotes && (
+                        <div className="w-full mt-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 shrink-0" />
+                          <span><strong>Mentor Feedback:</strong> {app.mentorNotes}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="glass-panel rounded-2xl p-12 text-center space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mx-auto text-slate-400 shadow-inner">
+                <Briefcase className="w-8 h-8 text-emerald-400" />
+              </div>
+              <div className="max-w-md mx-auto space-y-1">
+                <h4 className="text-lg font-bold text-white">No Applications Yet</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  You haven't applied to any internships or academic lab research fellowships yet. Explore active opportunities verified by the Ministry of Ayush and apply with 1 click.
+                </p>
+              </div>
+              <button
+                onClick={() => navigateTo('jobs')}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-bold text-xs hover:brightness-110 shadow-lg shadow-emerald-500/20 cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <Sparkles className="w-4 h-4" /> Explore Open Opportunities
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
