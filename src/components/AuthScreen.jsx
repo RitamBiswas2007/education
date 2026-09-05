@@ -364,43 +364,20 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-3 text-xs">
           {isSignUp && (
-            <>
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">Full Name *</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Dr. Ananya Sharma"
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
-                  />
-                  <User className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 flex items-start gap-2.5">
-                <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-emerald-400 block text-[11px]">Personalized Role Onboarding</span>
-                  <span className="text-[11px] text-slate-400 leading-tight">
-                    You'll select your dedicated workspace (Student, Teacher/Academician, or Recruiter) immediately after account creation.
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">Institution / Organization</label>
+            <div>
+              <label className="block text-slate-300 font-semibold mb-1">Full Name *</label>
+              <div className="relative">
                 <input
                   type="text"
-                  placeholder="e.g. National Institute of Ayurveda, Jaipur"
-                  value={institution}
-                  onChange={e => setInstitution(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
+                  required
+                  placeholder="e.g. Dr. Ananya Sharma"
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
                 />
+                <User className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
               </div>
-            </>
+            </div>
           )}
 
           <div>

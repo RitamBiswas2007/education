@@ -303,7 +303,7 @@ export default function App() {
     if (!localRoleConfirmed || isNewUser || userProfile.needsRoleSelection) {
       setShowRoleSelection(true);
       setShowProfileSetup(false);
-    } else if (!isAcademicVerified) {
+    } else if (chosenRole === 'student' && !isAcademicVerified) {
       // Prompt user to select degrees, college, and domains with AI verification before entering!
       setShowRoleSelection(false);
       setShowProfileSetup(true);
@@ -374,7 +374,7 @@ export default function App() {
     if (!hasSelectedGuestRole || !savedGuestRole) {
       setShowRoleSelection(true);
       setShowProfileSetup(false);
-    } else if (!isAcademicVerified) {
+    } else if (guestRole === 'student' && !isAcademicVerified) {
       // Must complete the academic form and AI verification before entering!
       setShowRoleSelection(false);
       setShowProfileSetup(true);
@@ -437,12 +437,12 @@ export default function App() {
       }
     }
 
-    // Now check if user has verified degrees, college, and domains with AI
+    // Now check if student has verified degrees, college, and domains with AI
     const isAcademicVerified = (localStorage.getItem(`ayush_academic_verified_${userId}`) === 'true' || currentUser?.academicVerified) &&
                                Boolean(updatedUser.college) &&
                                Boolean(updatedUser.degree);
 
-    if (!isAcademicVerified) {
+    if (selectedRole === 'student' && !isAcademicVerified) {
       // Present the Academic & Career Domain Onboarding Form before entering workspace!
       setShowProfileSetup(true);
     } else {
