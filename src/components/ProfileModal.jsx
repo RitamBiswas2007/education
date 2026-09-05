@@ -18,9 +18,13 @@ import {
   RefreshCw,
   ArrowRight,
   ArrowLeft,
-  AlertCircle
+  AlertCircle,
+  Target,
+  School,
+  FileText
 } from 'lucide-react';
 import { ROLES } from './RoleSelectionModal';
+import { AYUSH_DOMAINS } from '../data/ayushQuestionBank';
 
 const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
@@ -54,21 +58,49 @@ export default function ProfileModal({
     }
   };
 
-  // Form State
-  const [fullName, setFullName] = useState(currentUser?.name || '');
+  // Form State - Common for all users
+  const [fullName, setFullName] = useState(currentUser?.name || currentUser?.full_name || '');
   const [email] = useState(currentUser?.email || '');
-  const [institution, setInstitution] = useState(currentUser?.institution || '');
+  const [institution, setInstitution] = useState(currentUser?.institution || currentUser?.college || '');
   const [degree, setDegree] = useState(currentUser?.degree || '');
-  const [bio, setBio] = useState(currentUser?.bio || 'Passionate about integrating classical Ayush science with modern bioinformatics, clinical trials, and digital health technology.');
+  const [bio, setBio] = useState(currentUser?.bio || '');
   const [phone, setPhone] = useState(currentUser?.phone || '+91 98765 43210');
   const [location, setLocation] = useState(currentUser?.location || 'Jaipur, Rajasthan');
   const [avatar, setAvatar] = useState(currentUser?.avatar || PRESET_AVATARS[0]);
+
+  // Qualifications & Domains
+  const [qualifications, setQualifications] = useState(currentUser?.qualifications || degree || 'B.A.M.S.');
+  const [passingYear, setPassingYear] = useState(currentUser?.passingYear || '2026');
+  const [selectedDomains, setSelectedDomains] = useState(
+    Array.isArray(currentUser?.interestedDomains) && currentUser.interestedDomains.length > 0
+      ? currentUser.interestedDomains
+      : ['ayurveda', 'phytochemistry']
+  );
+
+  // Student-Exclusive Fields
+  const [collegeStudying, setCollegeStudying] = useState(currentUser?.college || currentUser?.institution || '');
+  const [degreePursuing, setDegreePursuing] = useState(currentUser?.degree || 'B.A.M.S.');
+  const [currentAcademicYear, setCurrentAcademicYear] = useState(currentUser?.year || '3rd Year');
+  const [whatDone, setWhatDone] = useState(currentUser?.whatDone || '');
+  const [studentSkills, setStudentSkills] = useState(currentUser?.studentSkills || '');
 
   // Role Switching State
   const [selectedNewRole, setSelectedNewRole] = useState(activeRole);
   const [roleSwitchSuccess, setRoleSwitchSuccess] = useState(false);
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Toggle domain
+  const handleToggleDomain = (domainId) => {
+    setSelectedDomains(prev => {
+      if (prev.includes(domainId)) {
+        if (prev.length === 1) return prev; // keep at least 1
+        return prev.filter(id => id !== domainId);
+      } else {
+        return [...prev, domainId];
+      }
+    });
+  };
 
   // Handle Profile Save
   const handleSaveProfile = async (e) => {
@@ -78,8 +110,15 @@ export default function ProfileModal({
     const updatedProfile = {
       ...currentUser,
       name: fullName,
-      institution,
-      degree,
+      institution: activeRole === 'student' ? collegeStudying : institution,
+      college: collegeStudying || institution,
+      degree: activeRole === 'student' ? degreePursuing : degree,
+      qualifications,
+      passingYear,
+      year: currentAcademicYear,
+      whatDone,
+      studentSkills,
+      interestedDomains: selectedDomains,
       bio,
       phone,
       location,
@@ -109,6 +148,7 @@ export default function ProfileModal({
 
   const currentRoleObj = ROLES.find(r => r.id === activeRole) || ROLES[0];
   const newRoleObj = ROLES.find(r => r.id === selectedNewRole) || ROLES[0];
+  const isStudent = activeRole === 'student';
 
   return (
     <div className="fixed inset-0 z-50 bg-[#060a12]/95 backdrop-blur-xl flex items-center justify-center p-4 overflow-y-auto font-sans">
@@ -158,43 +198,45 @@ export default function ProfileModal({
             type="button"
             onClick={onClose}
             className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white text-xs font-bold border border-slate-800 transition-all cursor-pointer"
-            title="Close Profile & Return to Workspace"
           >
-            ✕ Close
+            ✕
           </button>
         </div>
 
-        {/* Profile Internal Sub-Navigation Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-slate-800/80 pb-3">
+        {/* Tab Switcher: Profile Editor vs. Role Switcher */}
+        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900/80 border border-slate-800">
           <button
             type="button"
             onClick={() => navigateTo('profile')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
               activeTab === 'profile'
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 shadow-md shadow-emerald-500/20'
-                : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800'
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
-            <User className="w-3.5 h-3.5" /> Personal & Institutional Profile
+            <User className="w-3.5 h-3.5" />
+            <span>My Profile & Qualifications</span>
           </button>
+
           <button
             type="button"
             onClick={() => navigateTo('roles')}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+            className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
               activeTab === 'roles'
-                ? 'bg-gradient-to-r from-cyan-500 to-indigo-600 text-white shadow-md shadow-cyan-500/20'
-                : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
-            <ShieldCheck className="w-3.5 h-3.5" /> Workspace Role & Persona Switcher
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Role Settings (Strict Segregation)</span>
           </button>
         </div>
 
-        {/* Notifications */}
+        {/* Success Notifications */}
         {profileSaveSuccess && (
           <div className="p-3.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4" />
-            <span>Profile details updated and synchronized with Supabase cloud successfully!</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span>Profile and domain preferences successfully updated!</span>
           </div>
         )}
 
@@ -218,7 +260,7 @@ export default function ProfileModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               {/* Full Name */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Full Legal Name *</label>
+                <label className="block text-slate-300 font-semibold mb-1">Full Name *</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -245,36 +287,6 @@ export default function ProfileModal({
                     className="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-400 cursor-not-allowed opacity-80"
                   />
                   <Mail className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-                </div>
-              </div>
-
-              {/* Institution / University */}
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">Institution / University / Company *</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    value={institution}
-                    onChange={(e) => setInstitution(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
-                  />
-                  <Building2 className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-                </div>
-              </div>
-
-              {/* Degree / Designation */}
-              <div>
-                <label className="block text-slate-300 font-semibold mb-1">Degree / Highest Qualification *</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    required
-                    value={degree}
-                    onChange={(e) => setDegree(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
-                  />
-                  <GraduationCap className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
                 </div>
               </div>
 
@@ -305,11 +317,93 @@ export default function ProfileModal({
                   <MapPin className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
                 </div>
               </div>
+
+              {/* Institution / University */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  {isStudent ? 'Current College / University *' : 'Affiliated Institution / Organization *'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    value={isStudent ? collegeStudying : institution}
+                    onChange={(e) => isStudent ? setCollegeStudying(e.target.value) : setInstitution(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
+                  />
+                  <Building2 className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                </div>
+              </div>
+
+              {/* Degree / Designation */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">
+                  {isStudent ? 'Degree Pursuing *' : 'Highest Qualification Achieved *'}
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    value={isStudent ? degreePursuing : degree}
+                    onChange={(e) => isStudent ? setDegreePursuing(e.target.value) : setDegree(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
+                  />
+                  <GraduationCap className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                </div>
+              </div>
+
+              {/* Student Academic Year */}
+              {isStudent && (
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Current Academic Year</label>
+                  <select
+                    value={currentAcademicYear}
+                    onChange={(e) => setCurrentAcademicYear(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="1st Professional Year">1st Professional Year</option>
+                    <option value="2nd Professional Year">2nd Professional Year</option>
+                    <option value="3rd Professional Year">3rd Professional Year</option>
+                    <option value="Final Professional Year">Final Professional Year</option>
+                    <option value="Rotatory Clinical Intern">Rotatory Clinical Intern</option>
+                    <option value="Post-Graduate Scholar (MD/MS)">Post-Graduate Scholar (MD/MS)</option>
+                    <option value="Ph.D. Research Scholar">Ph.D. Research Scholar</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Passing Year / Experience */}
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Target Completion / Passing Year</label>
+                <input
+                  type="text"
+                  value={passingYear}
+                  onChange={(e) => setPassingYear(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
             </div>
+
+            {/* Student "What Have You Done" section */}
+            {isStudent && (
+              <div className="text-xs space-y-1">
+                <label className="block text-emerald-400 font-semibold flex items-center justify-between">
+                  <span>What Have You Done So Far? (Projects, Clinical Postings, Research, Experience)</span>
+                  <span className="text-[10px] text-slate-400">Displayed on your Student Portfolio</span>
+                </label>
+                <textarea
+                  rows="3"
+                  placeholder="Share details of your clinical exposure, herbarium collections, trial postings, workshops, or academic projects..."
+                  value={whatDone}
+                  onChange={(e) => setWhatDone(e.target.value)}
+                  className="w-full p-3 bg-slate-900 border border-slate-800 rounded-xl text-slate-200 focus:outline-none focus:border-emerald-500 text-xs"
+                />
+              </div>
+            )}
 
             {/* Professional Bio */}
             <div className="text-xs">
-              <label className="block text-slate-300 font-semibold mb-1">Professional Bio & Research Focus</label>
+              <label className="block text-slate-300 font-semibold mb-1">Professional Bio</label>
               <textarea
                 rows="2"
                 value={bio}
@@ -318,8 +412,39 @@ export default function ProfileModal({
               ></textarea>
             </div>
 
+            {/* Interested Ayush Domains Selection */}
+            <div className="text-xs space-y-2 pt-2 border-t border-slate-800">
+              <div className="flex items-center justify-between">
+                <label className="block text-slate-300 font-semibold flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Interested Ayush Domains ({selectedDomains.length} selected)</span>
+                </label>
+                <span className="text-[10px] text-slate-400">Controls your personalized AI Quiz questions</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {AYUSH_DOMAINS.map(d => {
+                  const isSel = selectedDomains.includes(d.id);
+                  return (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => handleToggleDomain(d.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
+                        isSel
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
+                          : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <span>{d.icon}</span>
+                      <span>{d.name.split('&')[0]}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* Avatar Selector */}
-            <div className="text-xs space-y-1.5">
+            <div className="text-xs space-y-1.5 pt-2 border-t border-slate-800">
               <label className="block text-slate-300 font-semibold">Choose Avatar</label>
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {PRESET_AVATARS.map((av, idx) => (
@@ -337,7 +462,7 @@ export default function ProfileModal({
             </div>
 
             {/* Form Action Buttons with Back button */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-800">
               <button
                 type="button"
                 onClick={onClose}

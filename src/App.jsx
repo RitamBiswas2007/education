@@ -25,15 +25,16 @@ import AcademicianPortal from './components/AcademicianPortal';
 import InstitutionAnalytics from './components/InstitutionAnalytics';
 import AuthScreen from './components/AuthScreen';
 import RoleSelectionModal from './components/RoleSelectionModal';
+import ProfileSetupModal from './components/ProfileSetupModal';
 import DisclaimerModal from './components/DisclaimerModal';
 import ProfileModal from './components/ProfileModal';
 
 import { 
-  INITIAL_STUDENT_PROFILE, 
   INITIAL_INTERNSHIPS, 
   INITIAL_CANDIDATES 
 } from './data/mockData';
 
+import { createFreshStudentProfile } from './data/ayushQuestionBank';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 
 export default function App() {
@@ -52,9 +53,22 @@ export default function App() {
   // Active Persona Role State (Locked strictly to the user's chosen role)
   const [activeRole, setActiveRole] = useState('student'); // 'student', 'industry', 'academician', 'admin'
   const [showRoleSelection, setShowRoleSelection] = useState(false);
+  const [showProfileSetup, setShowProfileSetup] = useState(false);
 
-  // Global Stateful Data
-  const [studentProfile, setStudentProfile] = useState(INITIAL_STUDENT_PROFILE);
+  // Global Stateful Data - Clean initial student profile without mock data
+  const [studentProfile, setStudentProfile] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ayush_active_student_profile');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return createFreshStudentProfile({
+      name: 'Ayush Scholar',
+      college: 'National Institute of Ayurveda, Jaipur',
+      degree: 'B.A.M.S. & M.Sc. Herbal Bio-Technology',
+      interestedDomains: ['ayurveda', 'phytochemistry']
+    });
+  });
+
   const [jobs, setJobs] = useState(INITIAL_INTERNSHIPS);
   const [applications, setApplications] = useState(['JOB-101']);
   const [candidates, setCandidates] = useState(INITIAL_CANDIDATES);
@@ -70,6 +84,7 @@ export default function App() {
         const userId = session.user.id;
         const localSavedRole = localStorage.getItem(`ayush_role_${userId}`);
         const localRoleConfirmed = localStorage.getItem(`ayush_role_selected_${userId}`) === 'true';
+        const localProfileDone = localStorage.getItem(`ayush_profile_completed_${userId}`) === 'true';
 
         let userRole = localSavedRole || session.user.user_metadata?.role;
         let isRoleChosen = localRoleConfirmed || Boolean(session.user.user_metadata?.role_selected);
@@ -93,25 +108,57 @@ export default function App() {
         }
 
         const finalRole = userRole || 'student';
+        
+        // Retrieve local saved profile if available
+        let savedProfileData = {};
+        try {
+          const raw = localStorage.getItem(`ayush_profile_${userId}`);
+          if (raw) savedProfileData = JSON.parse(raw);
+        } catch (e) {}
+
         const profile = {
           id: userId,
           email: session.user.email,
-          name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+          name: savedProfileData.name || session.user.user_metadata?.full_name || session.user.email.split('@')[0],
           role: finalRole,
-          institution: session.user.user_metadata?.institution || 'National Institute of Ayurveda, Jaipur',
-          degree: finalRole === 'academician' ? 'Ph.D. Dravyaguna & Phytochemistry' : 'B.A.M.S. & M.Sc. Herbal Bio-Tech',
-          skillScore: 85,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
+          institution: savedProfileData.institution || session.user.user_metadata?.institution || 'National Institute of Ayurveda, Jaipur',
+          college: savedProfileData.college || savedProfileData.institution || 'National Institute of Ayurveda, Jaipur',
+          degree: savedProfileData.degree || (finalRole === 'academician' ? 'Ph.D. Dravyaguna & Phytochemistry' : 'B.A.M.S. & M.Sc. Herbal Bio-Tech'),
+          qualifications: savedProfileData.qualifications || 'B.A.M.S.',
+          whatDone: savedProfileData.whatDone || '',
+          interestedDomains: savedProfileData.interestedDomains || ['ayurveda', 'phytochemistry'],
+          skillScore: savedProfileData.skillScore || 0,
+          avatar: savedProfileData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
         };
 
         setCurrentUser(profile);
         setActiveRole(finalRole);
 
-        // If user hasn't explicitly selected role yet, show onboarding
+        if (finalRole === 'student') {
+          const freshStudent = createFreshStudentProfile(profile);
+          // preserve any already saved quiz scores
+          try {
+            const savedStudent = localStorage.getItem(`ayush_student_profile_${userId}`);
+            if (savedStudent) {
+              setStudentProfile(JSON.parse(savedStudent));
+            } else {
+              setStudentProfile(freshStudent);
+            }
+          } catch (e) {
+            setStudentProfile(freshStudent);
+          }
+        }
+
+        // Check onboarding step
         if (!isRoleChosen) {
           setShowRoleSelection(true);
+          setShowProfileSetup(false);
+        } else if (!localProfileDone) {
+          setShowRoleSelection(false);
+          setShowProfileSetup(true);
         } else {
           setShowRoleSelection(false);
+          setShowProfileSetup(false);
         }
       }
     });
@@ -123,32 +170,63 @@ export default function App() {
         const userId = session.user.id;
         const localSavedRole = localStorage.getItem(`ayush_role_${userId}`);
         const localRoleConfirmed = localStorage.getItem(`ayush_role_selected_${userId}`) === 'true';
+        const localProfileDone = localStorage.getItem(`ayush_profile_completed_${userId}`) === 'true';
 
         const finalRole = localSavedRole || session.user.user_metadata?.role || 'student';
         const isRoleChosen = localRoleConfirmed || Boolean(session.user.user_metadata?.role_selected);
 
+        let savedProfileData = {};
+        try {
+          const raw = localStorage.getItem(`ayush_profile_${userId}`);
+          if (raw) savedProfileData = JSON.parse(raw);
+        } catch (e) {}
+
         const profile = {
           id: userId,
           email: session.user.email,
-          name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+          name: savedProfileData.name || session.user.user_metadata?.full_name || session.user.email.split('@')[0],
           role: finalRole,
-          institution: session.user.user_metadata?.institution || 'National Institute of Ayurveda, Jaipur',
-          degree: finalRole === 'academician' ? 'Ph.D. Dravyaguna & Phytochemistry' : 'B.A.M.S. & M.Sc. Herbal Bio-Tech',
-          skillScore: 85,
-          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
+          institution: savedProfileData.institution || session.user.user_metadata?.institution || 'National Institute of Ayurveda, Jaipur',
+          college: savedProfileData.college || savedProfileData.institution || 'National Institute of Ayurveda, Jaipur',
+          degree: savedProfileData.degree || (finalRole === 'academician' ? 'Ph.D. Dravyaguna & Phytochemistry' : 'B.A.M.S. & M.Sc. Herbal Bio-Tech'),
+          qualifications: savedProfileData.qualifications || 'B.A.M.S.',
+          whatDone: savedProfileData.whatDone || '',
+          interestedDomains: savedProfileData.interestedDomains || ['ayurveda', 'phytochemistry'],
+          skillScore: savedProfileData.skillScore || 0,
+          avatar: savedProfileData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${session.user.email}`
         };
 
         setCurrentUser(profile);
         setActiveRole(finalRole);
 
+        if (finalRole === 'student') {
+          const freshStudent = createFreshStudentProfile(profile);
+          try {
+            const savedStudent = localStorage.getItem(`ayush_student_profile_${userId}`);
+            if (savedStudent) {
+              setStudentProfile(JSON.parse(savedStudent));
+            } else {
+              setStudentProfile(freshStudent);
+            }
+          } catch (e) {
+            setStudentProfile(freshStudent);
+          }
+        }
+
         if (!isRoleChosen) {
           setShowRoleSelection(true);
+          setShowProfileSetup(false);
+        } else if (!localProfileDone) {
+          setShowRoleSelection(false);
+          setShowProfileSetup(true);
         } else {
           setShowRoleSelection(false);
+          setShowProfileSetup(false);
         }
       } else {
         setCurrentUser(null);
         setShowRoleSelection(false);
+        setShowProfileSetup(false);
       }
     });
 
@@ -196,6 +274,7 @@ export default function App() {
     setCurrentUser(null);
     setSession(null);
     setShowRoleSelection(false);
+    setShowProfileSetup(false);
   };
 
   // Auth Success Handler
@@ -206,60 +285,90 @@ export default function App() {
     const userId = userProfile.id;
     const localSavedRole = localStorage.getItem(`ayush_role_${userId}`);
     const localRoleConfirmed = localStorage.getItem(`ayush_role_selected_${userId}`) === 'true';
+    const localProfileDone = localStorage.getItem(`ayush_profile_completed_${userId}`) === 'true';
 
-    if (localRoleConfirmed && localSavedRole) {
-      setActiveRole(localSavedRole);
-      setShowRoleSelection(false);
-    } else if (isNewUser || userProfile.needsRoleSelection || !localRoleConfirmed) {
-      setActiveRole(userProfile.role || 'student');
+    const chosenRole = localSavedRole || userProfile.role || 'student';
+    setActiveRole(chosenRole);
+
+    if (!localRoleConfirmed || isNewUser || userProfile.needsRoleSelection) {
       setShowRoleSelection(true);
-    } else {
-      setActiveRole(userProfile.role || 'student');
+      setShowProfileSetup(false);
+    } else if (!localProfileDone) {
       setShowRoleSelection(false);
+      setShowProfileSetup(true);
+    } else {
+      setShowRoleSelection(false);
+      setShowProfileSetup(false);
     }
 
-    setStudentProfile(prev => ({
-      ...prev,
-      id: userProfile.id,
-      name: userProfile.name,
-      email: userProfile.email,
-      institution: userProfile.institution,
-      avatar: userProfile.avatar
-    }));
+    if (chosenRole === 'student') {
+      const fresh = createFreshStudentProfile(userProfile);
+      try {
+        const savedStudent = localStorage.getItem(`ayush_student_profile_${userId}`);
+        if (savedStudent) setStudentProfile(JSON.parse(savedStudent));
+        else setStudentProfile(fresh);
+      } catch (e) {
+        setStudentProfile(fresh);
+      }
+    }
   };
 
-  // Guest Login Handler (Remembers previously selected role so guest doesn't enter again)
+  // Guest Login Handler (Remembers previously selected role and profile)
   const handleGuestLogin = () => {
     const hasSelectedGuestRole = localStorage.getItem('ayush_guest_role_selected') === 'true';
     const savedGuestRole = localStorage.getItem('ayush_guest_role');
     const savedGuestInst = localStorage.getItem('ayush_guest_institution');
+    const hasGuestProfile = localStorage.getItem('ayush_profile_completed_GUEST-USER-2026') === 'true';
+
+    let savedGuestProfile = {};
+    try {
+      const raw = localStorage.getItem('ayush_profile_GUEST-USER-2026');
+      if (raw) savedGuestProfile = JSON.parse(raw);
+    } catch (e) {}
 
     const guestRole = savedGuestRole || 'student';
     const guestUser = {
       id: 'GUEST-USER-2026',
       email: 'guest.evaluator@ayush.gov.in',
-      name: 'Guest Evaluator',
+      name: savedGuestProfile.name || 'Guest Evaluator',
       role: guestRole,
-      institution: savedGuestInst || 'Ministry of Ayush Evaluation Desk',
-      degree: guestRole === 'academician' ? 'Faculty Evaluator' : guestRole === 'industry' ? 'Corporate Talent Lead' : 'Senior Ayush Scholar',
-      skillScore: 88,
+      institution: savedGuestProfile.institution || savedGuestInst || 'Ministry of Ayush Evaluation Desk',
+      college: savedGuestProfile.college || savedGuestInst || 'Ministry of Ayush Evaluation Desk',
+      degree: savedGuestProfile.degree || (guestRole === 'academician' ? 'Faculty Evaluator' : guestRole === 'industry' ? 'Corporate Talent Lead' : 'Senior Ayush Scholar'),
+      qualifications: savedGuestProfile.qualifications || 'Ayush Evaluation Specialist',
+      whatDone: savedGuestProfile.whatDone || '',
+      interestedDomains: savedGuestProfile.interestedDomains || ['ayurveda', 'phytochemistry'],
+      skillScore: savedGuestProfile.skillScore || 0,
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80'
     };
 
     setCurrentUser(guestUser);
+    setActiveRole(guestRole);
 
-    if (hasSelectedGuestRole && savedGuestRole) {
-      // User has previously entered it, shouldn't enter it again!
-      setActiveRole(savedGuestRole);
-      setShowRoleSelection(false);
-    } else {
-      // First time guest login, prompt them to pick their role
-      setActiveRole('student');
+    if (guestRole === 'student') {
+      const fresh = createFreshStudentProfile(guestUser);
+      try {
+        const savedStudent = localStorage.getItem('ayush_student_profile_GUEST-USER-2026');
+        if (savedStudent) setStudentProfile(JSON.parse(savedStudent));
+        else setStudentProfile(fresh);
+      } catch (e) {
+        setStudentProfile(fresh);
+      }
+    }
+
+    if (!hasSelectedGuestRole || !savedGuestRole) {
       setShowRoleSelection(true);
+      setShowProfileSetup(false);
+    } else if (!hasGuestProfile) {
+      setShowRoleSelection(false);
+      setShowProfileSetup(true);
+    } else {
+      setShowRoleSelection(false);
+      setShowProfileSetup(false);
     }
   };
 
-  // Role Confirmation Handler (Saves permanently to Supabase and localStorage)
+  // Role Confirmation Handler (Saves permanently and triggers Profile Setup Form if needed)
   const handleConfirmRole = async (selectedRole, institutionInput) => {
     setActiveRole(selectedRole);
     setShowRoleSelection(false);
@@ -273,73 +382,141 @@ export default function App() {
 
     const updatedInst = institutionInput || currentUser?.institution || 'National Institute of Ayurveda, Jaipur';
 
-    setCurrentUser(prev => ({
-      ...prev,
+    const updatedUser = {
+      ...(currentUser || {}),
       role: selectedRole,
       institution: updatedInst,
-      degree: roleDegreeMap[selectedRole] || prev?.degree
-    }));
+      college: updatedInst,
+      degree: roleDegreeMap[selectedRole] || currentUser?.degree
+    };
 
-    if (currentUser?.id) {
-      if (currentUser.id.startsWith('GUEST')) {
-        localStorage.setItem('ayush_guest_role', selectedRole);
-        localStorage.setItem('ayush_guest_role_selected', 'true');
-        if (institutionInput) {
-          localStorage.setItem('ayush_guest_institution', institutionInput);
-        }
-      } else {
-        localStorage.setItem(`ayush_role_${currentUser.id}`, selectedRole);
-        localStorage.setItem(`ayush_role_selected_${currentUser.id}`, 'true');
+    setCurrentUser(updatedUser);
 
-        if (isSupabaseConfigured && supabase) {
-          try {
-            await supabase.from('profiles').upsert({
-              id: currentUser.id,
-              email: currentUser.email,
-              full_name: currentUser.name,
+    const userId = currentUser?.id || 'GUEST-USER-2026';
+
+    if (userId.startsWith('GUEST')) {
+      localStorage.setItem('ayush_guest_role', selectedRole);
+      localStorage.setItem('ayush_guest_role_selected', 'true');
+      if (institutionInput) {
+        localStorage.setItem('ayush_guest_institution', institutionInput);
+      }
+    } else {
+      localStorage.setItem(`ayush_role_${userId}`, selectedRole);
+      localStorage.setItem(`ayush_role_selected_${userId}`, 'true');
+
+      if (isSupabaseConfigured && supabase) {
+        try {
+          await supabase.from('profiles').upsert({
+            id: userId,
+            email: currentUser.email,
+            full_name: currentUser.name,
+            role: selectedRole,
+            institution: updatedInst,
+            degree: roleDegreeMap[selectedRole] || 'Ayush Specialist'
+          });
+
+          await supabase.auth.updateUser({
+            data: {
               role: selectedRole,
-              institution: updatedInst,
-              degree: roleDegreeMap[selectedRole] || 'Ayush Specialist'
-            });
-
-            await supabase.auth.updateUser({
-              data: {
-                role: selectedRole,
-                role_selected: true,
-                institution: updatedInst
-              }
-            });
-          } catch (err) {
-            console.warn("Failed to persist role in Supabase:", err);
-          }
+              role_selected: true,
+              institution: updatedInst
+            }
+          });
+        } catch (err) {
+          console.warn("Failed to persist role in Supabase:", err);
         }
       }
     }
+
+    // After role selection, prompt user to complete profile form if not already completed!
+    const isProfileDone = localStorage.getItem(`ayush_profile_completed_${userId}`) === 'true';
+    if (!isProfileDone) {
+      setShowProfileSetup(true);
+    }
   };
 
-  // Profile Update Handler (Saves changes to Supabase & localStorage)
+  // Profile Setup Form Submission Handler (Mandatory Onboarding for All Users)
+  const handleSaveProfileSetup = async (compiledProfile) => {
+    setCurrentUser(compiledProfile);
+    setActiveRole(compiledProfile.role);
+
+    const userId = compiledProfile.id;
+    localStorage.setItem(`ayush_profile_${userId}`, JSON.stringify(compiledProfile));
+    localStorage.setItem(`ayush_profile_completed_${userId}`, 'true');
+    localStorage.setItem(`ayush_role_${userId}`, compiledProfile.role);
+    localStorage.setItem(`ayush_role_selected_${userId}`, 'true');
+
+    if (compiledProfile.role === 'student') {
+      const freshStudent = createFreshStudentProfile(compiledProfile);
+      setStudentProfile(freshStudent);
+      localStorage.setItem(`ayush_student_profile_${userId}`, JSON.stringify(freshStudent));
+      localStorage.setItem('ayush_active_student_profile', JSON.stringify(freshStudent));
+    }
+
+    if (isSupabaseConfigured && supabase && !userId.startsWith('GUEST')) {
+      try {
+        await supabase.from('profiles').upsert({
+          id: userId,
+          email: compiledProfile.email,
+          full_name: compiledProfile.name,
+          role: compiledProfile.role,
+          institution: compiledProfile.institution,
+          degree: compiledProfile.degree,
+          bio: compiledProfile.bio,
+          avatar_url: compiledProfile.avatar
+        });
+
+        await supabase.auth.updateUser({
+          data: {
+            full_name: compiledProfile.name,
+            role: compiledProfile.role,
+            role_selected: true,
+            profile_completed: true,
+            institution: compiledProfile.institution,
+            degree: compiledProfile.degree,
+            domains: compiledProfile.interestedDomains
+          }
+        });
+      } catch (err) {
+        console.warn("Error updating profile in Supabase:", err);
+      }
+    }
+
+    setShowProfileSetup(false);
+  };
+
+  // Profile Update Handler (From Header "My Profile" Modal)
   const handleSaveProfile = async (updatedData) => {
     setCurrentUser(updatedData);
 
-    // Sync student profile if active role is student
-    setStudentProfile(prev => ({
-      ...prev,
-      id: updatedData.id,
-      name: updatedData.name,
-      email: updatedData.email,
-      institution: updatedData.institution,
-      degree: updatedData.degree,
-      bio: updatedData.bio,
-      avatar: updatedData.avatar
-    }));
+    const userId = updatedData.id;
+    if (updatedData.role === 'student' || activeRole === 'student') {
+      setStudentProfile(prev => {
+        const next = {
+          ...prev,
+          name: updatedData.name,
+          email: updatedData.email,
+          institution: updatedData.institution,
+          college: updatedData.college || updatedData.institution,
+          degree: updatedData.degree,
+          year: updatedData.year || prev.year,
+          bio: updatedData.bio,
+          avatar: updatedData.avatar,
+          whatDone: updatedData.whatDone || prev.whatDone,
+          interestedDomains: updatedData.interestedDomains || prev.interestedDomains
+        };
+        localStorage.setItem(`ayush_student_profile_${userId}`, JSON.stringify(next));
+        localStorage.setItem('ayush_active_student_profile', JSON.stringify(next));
+        return next;
+      });
+    }
 
-    if (updatedData?.id) {
-      localStorage.setItem(`ayush_profile_${updatedData.id}`, JSON.stringify(updatedData));
-
-      if (isSupabaseConfigured && supabase && !updatedData.id.startsWith('GUEST')) {
+    if (userId) {
+      localStorage.setItem(`ayush_profile_${userId}`, JSON.stringify(updatedData));
+      if (isSupabaseConfigured && supabase && !userId.startsWith('GUEST')) {
         try {
           await supabase.from('profiles').upsert({
-            id: updatedData.id,
+            id: userId,
             email: updatedData.email,
             full_name: updatedData.name,
             institution: updatedData.institution,
@@ -352,6 +529,18 @@ export default function App() {
         }
       }
     }
+  };
+
+  // Persistent student profile updater
+  const handleUpdateStudentProfile = (updater) => {
+    setStudentProfile(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (currentUser?.id) {
+        localStorage.setItem(`ayush_student_profile_${currentUser.id}`, JSON.stringify(next));
+      }
+      localStorage.setItem('ayush_active_student_profile', JSON.stringify(next));
+      return next;
+    });
   };
 
   // Apply Job Handler
@@ -572,7 +761,7 @@ export default function App() {
         {activeRole === 'student' && (
           <StudentPortal
             studentProfile={studentProfile}
-            setStudentProfile={setStudentProfile}
+            setStudentProfile={handleUpdateStudentProfile}
             jobs={jobs}
             onApplyJob={handleApplyJob}
             applications={applications}
@@ -648,6 +837,20 @@ export default function App() {
           initialRole={activeRole}
           onConfirmRole={handleConfirmRole}
           onClose={currentUser?.role ? () => setShowRoleSelection(false) : undefined}
+        />
+      )}
+
+      {/* Profile Setup Onboarding Modal (Mandatory Form for All Users, with Student Specializations) */}
+      {showProfileSetup && (
+        <ProfileSetupModal
+          currentUser={currentUser}
+          currentRole={activeRole}
+          onSaveProfileSetup={handleSaveProfileSetup}
+          canClose={true}
+          onClose={() => {
+            setShowProfileSetup(false);
+            setShowRoleSelection(true);
+          }}
         />
       )}
     </div>
