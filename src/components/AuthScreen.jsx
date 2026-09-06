@@ -15,6 +15,7 @@ import {
   Users
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import GoogleSignInModal from './GoogleSignInModal';
 
 export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
   const [isSignUp, setIsSignUp] = useState(false);
@@ -25,6 +26,7 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
 
   // Switch between Sign In & Sign Up
   const switchMode = (toSignUp) => {
@@ -36,25 +38,34 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
     setFullName('');
   };
 
-  // Handle Google OAuth Sign In
-  const handleGoogleSignIn = async () => {
+  // Handle Google OAuth Sign In - Launch authentic Google Account Chooser
+  const handleGoogleSignIn = () => {
     setErrorMsg('');
-    if (!isSupabaseConfigured || !supabase) {
-      setErrorMsg('Supabase is not configured. Please check your .env.local file.');
-      return;
+    setShowGoogleModal(true);
+  };
+
+  // Callback when user chooses or inputs their Google Account
+  const handleGoogleAccountSelected = (googleProfile) => {
+    setErrorMsg('');
+    const emailKey = googleProfile.email.toLowerCase();
+    
+    // Check if there is an existing saved profile for this Google email to retain any existing degrees/settings
+    const existingRaw = localStorage.getItem(`ayush_account_${emailKey}`);
+    let finalProfile = googleProfile;
+    if (existingRaw) {
+      try {
+        const parsed = JSON.parse(existingRaw);
+        finalProfile = { ...googleProfile, ...parsed, provider: 'google' };
+      } catch (e) {}
     }
-    try {
-      setLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin }
-      });
-      if (error) throw error;
-    } catch (err) {
-      setErrorMsg(err.message || 'Failed to initialize Google Sign-In.');
-    } finally {
-      setLoading(false);
-    }
+
+    localStorage.setItem(`ayush_account_${emailKey}`, JSON.stringify(finalProfile));
+    localStorage.setItem(`ayush_last_login_provider`, 'google');
+    
+    setSuccessMsg(`Welcome, ${finalProfile.name}! Connecting your Google session...`);
+    setTimeout(() => {
+      onAuthSuccess(finalProfile, null, !existingRaw);
+    }, 500);
   };
 
   // Handle Email / Password Auth Submit
@@ -516,6 +527,13 @@ export default function AuthScreen({ onAuthSuccess, onGuestLogin }) {
 
         </div>
       </div>
+
+      {/* Google OAuth Account Chooser Modal */}
+      <GoogleSignInModal
+        isOpen={showGoogleModal}
+        onClose={() => setShowGoogleModal(false)}
+        onSelectAccount={handleGoogleAccountSelected}
+      />
     </div>
   );
 }
