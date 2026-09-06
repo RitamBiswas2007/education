@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   ArrowLeft, 
   ArrowRight, 
@@ -22,7 +22,8 @@ import {
   Check,
   Plus,
   Compass,
-  X
+  X,
+  Loader2
 } from 'lucide-react';
 import { MASTER_DOMAINS } from '../data/skillCareerEngine';
 import { ROLES } from './RoleSelectionModal';
@@ -64,6 +65,71 @@ export default function ProfileSetupModal({
     return '';
   });
   const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const collegeDropdownRef = useRef(null);
+
+  // External Colleges API integration & alphabetical caching
+  const [apiColleges, setApiColleges] = useState([]);
+  const [isLoadingColleges, setIsLoadingColleges] = useState(false);
+
+  // Fetch comprehensive colleges/universities directory & cache in sessionStorage
+  useEffect(() => {
+    let isMounted = true;
+    const cacheKey = 'ayush_setu_colleges_directory_in';
+
+    // 1. Try to load from session cache first for instant response
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setApiColleges(parsed);
+          return;
+        }
+      }
+    } catch (e) {
+      // ignore storage access errors
+    }
+
+    // 2. Fetch from external university directory API
+    const fetchDirectory = async () => {
+      setIsLoadingColleges(true);
+      try {
+        const res = await fetch('http://universities.hipolabs.com/search?country=India');
+        if (!res.ok) throw new Error('Failed to load universities API');
+        const data = await res.json();
+        
+        if (Array.isArray(data) && isMounted) {
+          const formatted = data.map(item => ({
+            name: item.name,
+            type: item.domains && item.domains.length ? item.domains[0] : 'University / Institute',
+            authority: item['state-province'] ? `${item['state-province']}, India` : 'Government / UGC Recognized'
+          }));
+          setApiColleges(formatted);
+          try {
+            sessionStorage.setItem(cacheKey, JSON.stringify(formatted));
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn('External college API lookup failed, standard statutory dataset retained:', err);
+      } finally {
+        if (isMounted) setIsLoadingColleges(false);
+      }
+    };
+
+    fetchDirectory();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Dismiss dropdown when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (collegeDropdownRef.current && !collegeDropdownRef.current.contains(e.target)) {
+        setShowCollegeDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   // Domains Selected - NO PRE-SELECTION
   const [selectedDomains, setSelectedDomains] = useState(() => {
@@ -83,16 +149,43 @@ export default function ProfileSetupModal({
   const [stepError, setStepError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filtered College Suggestions
+  // Master Combined List sorted strictly ALPHABETICALLY (A to Z)
+  const allAlphabeticalColleges = useMemo(() => {
+    const map = new Map();
+
+    // 1. Curated statutory & Ayush institutions (with apex authority info)
+    POPULAR_RECOGNIZED_COLLEGES.forEach(col => {
+      map.set(col.name.toLowerCase(), col);
+    });
+
+    // 2. Add colleges fetched from the external API
+    apiColleges.forEach(col => {
+      const key = col.name.toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, col);
+      }
+    });
+
+    const combined = Array.from(map.values());
+    // Strictly sort alphabetically A-Z
+    return combined.sort((a, b) => a.name.localeCompare(b.name));
+  }, [apiColleges]);
+
+  // Filtered College Suggestions (Alphabetical)
   const filteredColleges = useMemo(() => {
     const q = collegeInput.trim().toLowerCase();
-    if (!q) return POPULAR_RECOGNIZED_COLLEGES.slice(0, 6);
-    return POPULAR_RECOGNIZED_COLLEGES.filter(c => 
-      c.name.toLowerCase().includes(q) ||
-      c.authority.toLowerCase().includes(q) ||
-      c.type.toLowerCase().includes(q)
-    ).slice(0, 8);
-  }, [collegeInput]);
+    if (!q) {
+      // Show first 25 alphabetically when input is blank
+      return allAlphabeticalColleges.slice(0, 25);
+    }
+    return allAlphabeticalColleges
+      .filter(c => 
+        c.name.toLowerCase().includes(q) ||
+        (c.authority && c.authority.toLowerCase().includes(q)) ||
+        (c.type && c.type.toLowerCase().includes(q))
+      )
+      .slice(0, 35);
+  }, [collegeInput, allAlphabeticalColleges]);
 
   // Degree Toggle
   const handleToggleDegree = (degName) => {
@@ -499,17 +592,25 @@ export default function ProfileSetupModal({
                 </p>
               </div>
 
-              {/* College Input Field */}
-              <div className="relative">
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  College / University / Institute <span className="text-emerald-400">*</span>
-                </label>
+              {/* College Input Field with Alphabetical Directory */}
+              <div className="relative" ref={collegeDropdownRef}>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-slate-300">
+                    College / University / Institute <span className="text-emerald-400">*</span>
+                  </label>
+                  {isLoadingColleges && (
+                    <span className="text-[10px] text-cyan-400 flex items-center gap-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Loading colleges...</span>
+                    </span>
+                  )}
+                </div>
                 <div className="relative">
                   <Building2 className="w-4 h-4 text-slate-500 absolute left-3 top-3" />
                   <input
                     type="text"
                     required
-                    placeholder="e.g. National Institute of Ayurveda, Jaipur / All India Institute of Ayurveda / IIT Delhi..."
+                    placeholder="Search or pick your college alphabetically (A-Z)..."
                     value={collegeInput}
                     onChange={(e) => {
                       setCollegeInput(e.target.value);
@@ -534,11 +635,16 @@ export default function ProfileSetupModal({
                   )}
                 </div>
 
-                {/* Live Suggestions Dropdown */}
+                {/* Live Suggestions Dropdown (Alphabetical A-Z) */}
                 {showCollegeDropdown && filteredColleges.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl max-h-48 overflow-y-auto p-1 divide-y divide-slate-800/60">
-                    <div className="px-3 py-1 text-[10px] uppercase tracking-wider font-bold text-slate-400 bg-slate-900/90 sticky top-0">
-                      Recognized Statutory Institutions ({filteredColleges.length})
+                  <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-slate-950 border border-slate-700 rounded-xl shadow-2xl max-h-56 overflow-y-auto p-1 divide-y divide-slate-800/60">
+                    <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider font-bold text-slate-400 bg-slate-900/95 sticky top-0 flex items-center justify-between z-10 backdrop-blur-sm">
+                      <span className="flex items-center gap-1.5">
+                        <span>Recognized Colleges & Universities (A-Z)</span>
+                      </span>
+                      <span className="text-emerald-400 font-mono text-[9px] bg-emerald-950/60 border border-emerald-500/30 px-1.5 py-0.5 rounded">
+                        {filteredColleges.length} matches
+                      </span>
                     </div>
                     {filteredColleges.map((col, idx) => (
                       <div
@@ -546,11 +652,11 @@ export default function ProfileSetupModal({
                         onClick={() => handleSelectCollege(col.name)}
                         className="px-3 py-2 hover:bg-emerald-950/40 hover:text-emerald-300 cursor-pointer rounded-lg text-xs transition-colors flex items-center justify-between"
                       >
-                        <div>
-                          <span className="font-semibold text-slate-200 block">{col.name}</span>
-                          <span className="text-[10px] text-slate-400 block">{col.authority}</span>
+                        <div className="pr-2 overflow-hidden">
+                          <span className="font-semibold text-slate-200 block truncate">{col.name}</span>
+                          <span className="text-[10px] text-slate-400 block truncate">{col.authority}</span>
                         </div>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-emerald-400 font-mono shrink-0 ml-2">
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800/80 text-cyan-300 font-mono shrink-0 ml-2">
                           {col.type}
                         </span>
                       </div>
